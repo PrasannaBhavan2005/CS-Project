@@ -1,0 +1,1 @@
+testbed up: rtt_asym  A=4000kbit/30ms  B=4000kbit/150ms  queue=100ms

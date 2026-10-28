@@ -1,0 +1,12 @@
+# Windows download metadata (copied in from the Windows side)
+*:Zone.Identifier
+
+# Generated certificate and transfer input file (testbed/run_transfer.sh)
+.cache/
+
+# Large raw outputs; summary.csv, meta.env and logs stay tracked
+results/**/qlog_*/
+results/**/dump/
+results/**/*.log.gz
+
+__pycache__/
