@@ -214,3 +214,34 @@ TQUIC c51c237, CUBIC, 10 MiB download)
   was checked only.
 - Not verified: Termux/Android `ping -D` output format and minimum interval;
   the guide tells teammates to check `ping -D` first.
+
+## 2026-11-01: encodings (Week 1 item 6): done, main clip to be chosen
+
+Done
+- `workload/clips.csv` (3 blackboard candidates, 2 controls), `download.sh`,
+  `pick_start.sh`, `encode.sh` (intra / gop2), `frame_stats.py`, README with
+  the frame-size table. Frame traces and `.cmd.txt` (exact command, x264
+  option string) committed; videos are git-ignored.
+- Encodes checked: x264 options in the stream show rc=cbr, bitrate=2600,
+  vbv_maxrate=2600, vbv_bufsize=1300, bframes=0, rc_lookahead=0, keyint=50,
+  scenecut=0, intra_refresh=1 (intra), nal_hrd=none, filler=0. Intra mode has
+  exactly one I-frame (frame 0) in every clip.
+
+Problems found and fixed
+- First intra encodes had a scene-cut I-frame (stochastic, handwriting):
+  x264 still inserts them with intra refresh; now scenecut=0.
+- encode.sh's inline Python failed on escaped quotes; replaced by awk.
+- Slides control: the median-complexity window (2440 s) was tablet writing;
+  now 3050 s, picked by the same rule within the slides-only stretch.
+
+For the user to decide / note
+- Main clip: stochastic, linalg or probability (table in workload/README.md).
+- License: the YouTube pages say CC BY; NPTEL's policy is CC BY-SA since Sep
+  2014 (CC wiki). No page found that states CC BY-NC-SA, as CLAUDE.md says.
+- Frame rate: sources are 25 fps; encoded at 25, not the proposal's 30.
+- No CBR filler; controls average well below 2.6 Mbit/s.
+- Camera cuts make large P-frames even in intra-refresh mode (relevant to H5).
+
+Week 1 status: all gate items done except the first trace site (teammates).
+Open: choose main clip; record traces; CLAUDE.md "Main clip" line (license,
+fps) once the user decides.
