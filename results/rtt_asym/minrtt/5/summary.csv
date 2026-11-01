@@ -1,2 +1,0 @@
-scenario,scheduler,run_id,file_ok,transfer_s,goodput_mbps,down_bytes_a,down_bytes_b,share_a_pct,share_b_pct,up_bytes_a,up_bytes_b,drops_a,drops_b
-rtt_asym,minrtt,5,1,12.108,6.93,5736814,5333087,51.8,48.2,146067,149116,21,160

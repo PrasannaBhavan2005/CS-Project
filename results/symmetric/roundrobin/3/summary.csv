@@ -1,2 +1,0 @@
-scenario,scheduler,run_id,file_ok,transfer_s,goodput_mbps,down_bytes_a,down_bytes_b,share_a_pct,share_b_pct,up_bytes_a,up_bytes_b,drops_a,drops_b
-symmetric,roundrobin,3,1,11.766,7.13,5567374,5490969,50.3,49.7,141639,147946,13,19
