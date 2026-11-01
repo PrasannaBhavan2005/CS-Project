@@ -13,11 +13,12 @@
 #
 # Each veth end is shaped on egress, so both directions of a path see the same
 # link: netem adds RTT/2 of delay, then an htb class limits the rate and a
-# bfifo under it holds a bottleneck queue of QUEUE_MS worth of bytes at that
-# rate. Not tbf: tbf refills its whole bucket on every `tc change`, so trace
-# replay (a change every 100 ms) let extra bursts through; htb keeps its tokens
-# when a class is changed (docs/calibration.md). Data flows client
-# -> server (the lecturer's device is the client).
+# plug qdisc under it (a byte FIFO that replay.py can block) holds a
+# bottleneck queue of QUEUE_MS worth of bytes at that rate. Not tbf: tbf
+# refills its whole bucket on every `tc change`, so trace replay (a change
+# every 100 ms) let extra bursts through; htb keeps its tokens when a class is
+# changed (docs/calibration.md). Data flows client -> server (the lecturer's
+# device is the client).
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 source "$here/common.sh"
@@ -38,8 +39,8 @@ A_RATE_KBIT=${A_RATE_KBIT:-$a_rate}; A_RTT_MS=${A_RTT_MS:-$a_rtt}
 B_RATE_KBIT=${B_RATE_KBIT:-$b_rate}; B_RTT_MS=${B_RTT_MS:-$b_rtt}
 QUEUE_MS=${QUEUE_MS:-200}
 
-# netem/htb are modules in the WSL2 kernel and are not loaded after a restart.
-sudo modprobe -a sch_netem sch_tbf sch_htb
+# netem/htb/plug are modules in the WSL2 kernel and are not loaded after a restart.
+sudo modprobe -a sch_netem sch_htb sch_plug
 
 "$here/down.sh"
 sudo "$IP" netns add "$NS_CLI"
@@ -79,7 +80,10 @@ shape() {
     sudo tc -n "$ns" qdisc replace dev "$dev" parent 1:1 handle 10: htb default 1
     sudo tc -n "$ns" class replace dev "$dev" parent 10: classid 10:1 \
         htb rate "${rate}kbit" ceil "${rate}kbit" burst "$burst" cburst "$burst" quantum 1514
-    sudo tc -n "$ns" qdisc replace dev "$dev" parent 10:1 handle 11: bfifo limit "$limit"
+    # Leaf: a byte-limited FIFO that replay.py can also block (rate 0). plug
+    # starts blocked, so release it.
+    sudo tc -n "$ns" qdisc replace dev "$dev" parent 10:1 handle 11: plug limit "$limit"
+    sudo tc -n "$ns" qdisc change dev "$dev" parent 10:1 handle 11: plug release_indefinite
 }
 shape "$NS_CLI" "$CLI_A" "$A_RATE_KBIT" "$A_RTT_MS"
 shape "$NS_SRV" "$SRV_A" "$A_RATE_KBIT" "$A_RTT_MS"
