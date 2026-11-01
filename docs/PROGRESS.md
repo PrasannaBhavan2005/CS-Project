@@ -263,3 +263,38 @@ Edited by me at the user's request: docs/proposal.md (licence, fps, freeze
 threshold at 25 fps, controls, budget) and CLAUDE.md (same). Hypotheses
 H1-H5, thresholds and P1-P6 untouched. The claude.ai copy of the proposal
 (linked at its top) was not updated.
+
+## 2026-11-01: week 2, TQUIC hooks a-c and ECF: done
+
+TQUIC `team7` now (on d87a9a0 = v1.6.0): 108bc38 stall fix, c51c237
+frame_path log, a218a69 hooks a+b, 6024ae7 hook c, a98f01d ECF.
+`cargo test --release`: 563 + 1 passed.
+
+CLAUDE.md "TQUIC facts" checked in source (1 Nov): 1 (global stream queue),
+2 (fallback writes stream data after a declined on_select), 3 (urgency 127,
+incremental), 4 (app_limited=false to on_ack; CUBIC pacing from cwnd),
+5 (persistent congestion stub) all hold; line numbers have shifted.
+
+- Hook a, `Connection::stream_set_path_preference(stream_id, Some((local,
+  remote)))`: packets for another active path skip the stream; it is put
+  back in the queue afterwards. A preference for an inactive path is
+  ignored. Note for F1/F2: the scheduler must also pick the preferred path,
+  or the data waits (a path-unaware scheduler can starve such streams).
+- Hook b: after a declined on_select the fallback packet carries no stream
+  data, except PTO probes. Built-in schedulers decline only when no active
+  path can send, so they behave as before (their fallback could only send
+  stream data in probes, which stay allowed).
+- Hook c: fact 4 confirmed by a test (cwnd 13472 -> 40162 bytes while bytes
+  in flight stayed under a quarter of the window), so the RFC 9002 7.8 rule
+  is applied for every scheduler: an ACK is application-limited unless bytes
+  in flight before it were >= half the window or within 3 packets of it.
+  A second test checks that a window-limited sender still grows. The first
+  version of that test was wrong (the test config's 90-byte flow-control
+  window kept the sender below the window); fixed by raising the
+  receiver's limits.
+- Each hook test fails with its hook disabled (checked), except the
+  inactive-path test, which covers the "ignore" case.
+- ECF ported from team7-old (6 unit tests).
+
+Not yet checked: bulk transfer goodput on the testbed with hook c (unit
+test only). The streamer runs will show it.
