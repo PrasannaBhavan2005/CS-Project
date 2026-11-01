@@ -364,3 +364,16 @@ CLAUDE.md and proposal section 8: week 3 = Nov 12-14 (F1, F2, A1, R2, full
 matrix, sweeps, stress; overnight batches), Nov 15-17 = statistics, plots,
 report, slides; stretch items only if time is left. About 1,240 runs (~25 h)
 now have to fit in about four nights from Nov 11. Hypotheses unchanged.
+
+## 2026-11-01 21:15 UTC: laptop sleep during batch week2_s0s4_v2
+- The laptop went to sleep from about 20:38 to 21:11 UTC, during run
+  rtt_asym/S1/2600_intra_stochastic/3. That run took 2024 s instead of ~64 s
+  and its receiver CPU peaked at 117.4% (catch-up after resume). The batch's
+  CPU rule (> 80%) discarded it automatically to
+  results/_discarded/results/rtt_asym/S1/2600_intra_stochastic/3.cpu.1793567497
+  and reran it: rc=0, 64 s, CPU max 10%. The real cause was the sleep, not load.
+- No other run overlapped the sleep: rtt_asym/S0/3 ended 20:37:53, before it.
+  WSL did not restart (uptime 20 h) and the namespaces stayed up.
+- Since 21:15 a Windows SetThreadExecutionState request (started from WSL with
+  powershell.exe, 4 h) blocks idle sleep. Closing the lid can still suspend.
+- Status: 64/200 done, 0 failures apart from the discard above.
