@@ -1,0 +1,25 @@
+<section id="why" data-transition="fade" style="background:#FBFBF8;color:#14213D;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:36px">
+<p style="font-size:28px;letter-spacing:4px;text-transform:uppercase;color:#C8691F;font-weight:600">4 · Why we think it works</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:64px;font-weight:600;line-height:1.1">A frame’s finish time is predictable, so we can balance it</h2>
+<div style="display:flex;align-items:center;justify-content:center;gap:20px;background:#FFFFFF;padding:28px;border:1px solid #DCE1E8;border-radius:16px;font-family:'Source Serif 4', Georgia, serif">
+<p style="font-size:52px;font-style:italic">T =</p>
+<div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+<p style="font-size:48px;font-style:italic">queued + frame size</p>
+<hr style="width:440px;border-top:3px solid #14213D">
+<p style="font-size:48px;font-style:italic">link rate</p>
+</div>
+<p style="font-size:48px;font-style:italic">+ queueing delay + one-way delay</p>
+</div>
+<div style="display:flex;gap:28px">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#EEF1F4;padding:32px 36px;border-radius:16px">
+<h3 style="font-size:32px;font-weight:600;color:#2F6FB0">Split rule</h3>
+<p style="font-size:28px;line-height:1.45;color:#3C4658">Choose the split S₁ + S₂ = S so both parts finish together: T₁(S₁) = T₂(S₂). One linear equation, one answer.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#EEF1F4;padding:32px 36px;border-radius:16px">
+<h3 style="font-size:32px;font-weight:600;color:#2F6FB0">Worked example</h3>
+<p style="font-size:28px;line-height:1.45;color:#3C4658">Two 1.6 Mbit/s links (one-way 15 ms and 75 ms), an 85 KB frame: one link 440 ms; split 48.5 / 36.5 KB, both done at <b>258 ms</b>.</p>
+</div>
+</div>
+<p style="position:absolute;left:128px;bottom:64px;width:1664px;font-size:24px;color:#6A7383">Example worked from the formula, not measured. Our 250 ms target is what makes 258 vs 440 ms matter.</p>
+<aside>Formally, T_p = (U_p + S)/R_p + (sRTT_p − minRTT_p) + minRTT_p/2: time to drain what is queued plus this frame at the link's measured rate, the extra delay the buffer adds right now, and half the minimum round trip. Setting T_1(S_1) = T_2(S − S_1) and solving gives S_1 = ((U_2 + S)/R_2 + d_2 − U_1/R_1 − d_1) / (1/R_1 + 1/R_2), clamped between 0 and S, where d_p is the two delay terms. Example: rates 200 KB/s each, d_1 = 15 ms, d_2 = 75 ms, empty queues, S = 85 KB (the largest frame in our clip, from a camera cut): S_1 = 0.485 s / 0.01 s per KB = 48.5 KB; both parts finish at 257.5 ms, versus 440 ms on one link. A packet scheduler cannot do this because it never sees the frame boundary. Risk: the rate estimate R can be wrong; reference R2 (F2 given the true rates) measures how much that costs.</aside>
+</section>
