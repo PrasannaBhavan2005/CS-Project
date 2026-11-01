@@ -12,7 +12,8 @@ Per path:
   real_pairs the configured rate comes from replay.csv, averaged over each bin;
   the iperf3 clock is aligned to the replay clock by the shift (searched over
   -1..+1 s in 10 ms steps) that minimises the mean absolute error. The shift is
-  reported. The first 1 s (queue filling) and the last bin are left out.
+  reported. The first 1 s (queue filling), the last bin and anything after
+  the test duration are left out.
 """
 
 import argparse
@@ -87,7 +88,9 @@ def analyse(run):
         lp = run / f"ping_loaded_{p}.txt"
         loaded = ping_stats(lp)[2] if lp.exists() else None
         bins = [b for b in iperf_bins(run / f"iperf_{p}.json", payload)][:-1]
-        bins = [b for b in bins if b[0] >= SKIP_S]
+        # Only the test itself: after a broken control connection the iperf3
+        # server keeps logging empty intervals past the test's end.
+        bins = [b for b in bins if SKIP_S <= b[0] and b[1] <= float(m["DURATION_S"])]
         if timed:
             steps = replay_steps(run / "replay.csv", f"c{p}")
             best = None

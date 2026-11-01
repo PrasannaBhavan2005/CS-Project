@@ -1,0 +1,21 @@
+qdisc noqueue 0: dev lo root refcnt 2 
+ Sent 0 bytes 0 pkt (dropped 0, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+qdisc netem 1: dev cA root refcnt 5 limit 100000 delay 20ms
+ Sent 5064036 bytes 4188 pkt (dropped 2182, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+qdisc htb 10: dev cA parent 1:1 r2q 10 default 0x1 direct_packets_stat 0 direct_qlen 1000
+ Sent 5064036 bytes 4188 pkt (dropped 2182, overlimits 4065 requeues 0) 
+ backlog 0b 0p requeues 0
+qdisc bfifo 11: dev cA parent 10:1 limit 50000b
+ Sent 5064036 bytes 4188 pkt (dropped 2182, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+qdisc netem 1: dev cB root refcnt 5 limit 100000 delay 30ms
+ Sent 3044547 bytes 2562 pkt (dropped 1308, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+qdisc htb 10: dev cB parent 1:1 r2q 10 default 0x1 direct_packets_stat 0 direct_qlen 1000
+ Sent 3044547 bytes 2562 pkt (dropped 1308, overlimits 2438 requeues 0) 
+ backlog 0b 0p requeues 0
+qdisc bfifo 11: dev cB parent 10:1 limit 30000b
+ Sent 3044547 bytes 2562 pkt (dropped 1308, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0

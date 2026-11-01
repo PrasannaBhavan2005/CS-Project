@@ -142,3 +142,41 @@ Interpretation choices (not hypotheses; flagged to the user)
   trace mean.
 
 Next: Gate C (calibration report).
+
+## 2026-11-01: Gate C (calibration report): passed
+
+Done
+- `testbed/calibrate.sh` (unloaded ping, iperf3 UDP above capacity with
+  100 ms receiver bins, loaded ping) and `analysis/calibration.py`.
+- `docs/calibration.md`: method, results, what failed first.
+- Shaper changed twice because calibration caught errors:
+  1. tbf -> htb: tbf refills its bucket on every `tc change`, so trace replay
+     delivered 9-25% too much (1 s medians). Also affects the archived old
+     design's trace results.
+  2. 8 kbit/s "zero" -> plug block: htb's time-based token debt stalled paths
+     for up to ~1.2 s after zero bins.
+
+Evidence (final shaper, runs in `results/calibration/`)
+- Unloaded RTT: median 0.0-0.4 ms above configured on every path.
+- Static rates: mean within 0.2%; 1 s windows within 0.6%.
+- Outage: zero-rate bins measure 0; mean within 0.1%.
+- Trace replay (public Mahimahi uplink, 3 offsets): mean within 1.5%; 1 s
+  windows within about 3% except on near-zero stretches of trace B (p95 +10.9%
+  and +19.5%, few packets per second).
+- Buffer: loaded RTT = configured RTT + 199-200 ms on four paths.
+
+Failed / excluded runs
+- real_pairs_public_mahimahi/7: path-B iperf3 client lost its TCP control
+  connection (trace B mostly zero at offset 0); script aborted before
+  meta.env; not analysed. Run 10 repeated it (same client error, server log
+  complete, used).
+- symmetric/1: taken before calibrate.sh had run ids and tc stats (moved into
+  `symmetric/1` by me; files unchanged; I briefly appended a note to its
+  meta.env and removed it again).
+- tbf runs (symmetric/1-2, control/1, rtt_asym/1, bw_asym/1, outage/1,
+  real_pairs/1-3) and first htb runs (symmetric/3, */2, real_pairs/4-6) are
+  kept as evidence for the shaper changes; not used as calibration.
+- The tbf runs record REPO_GIT=c9fadae although calibrate.sh was not yet
+  committed (the dirty check covered tracked files only).
+
+Next: Gate D (multipath transfers on the new scenarios, CUBIC).

@@ -112,6 +112,23 @@ sudo /usr/bin/ip netns exec mpq-srv tc -s qdisc show
 sudo /usr/bin/ip -n mpq-cli -s link show
 ```
 
+## Calibration
+
+```bash
+testbed/calibrate.sh rtt_asym 1
+```
+
+```bash
+SITE=public_mahimahi OFFSET_MS=300000 testbed/calibrate.sh real_pairs 1
+```
+
+```bash
+analysis/.venv/bin/python analysis/calibration.py results/calibration/rtt_asym/1
+```
+
+Method, results and the shaper history (tbf -> htb -> htb + plug):
+`docs/calibration.md`.
+
 ## Week 1, check 3: multipath transfer over both paths
 
 ```bash
