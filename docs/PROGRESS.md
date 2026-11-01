@@ -55,3 +55,54 @@ copied from the old `CLAUDE.md`.
 
 ### Next
 Week 1 plan to be agreed with the user (see chat on 1 Nov).
+
+## 2026-11-01: Gate A (TQUIC builds, tests pass): passed
+
+Done
+- Old-design work archived, nothing deleted:
+  - code and docs: branch `archive/old-design` (6da75fb) in this repo;
+  - results (1.1 GB), old binaries, old encodes and the old streamer build:
+    moved to `~/acn-archive/` (outside the repo). `results/` in the repo is
+    empty; the 28 Oct transfer runs remain in git history (5fc8f5a).
+  - TQUIC: old branch renamed `team7-old` (10b826e).
+- New TQUIC branch `team7`, base **d87a9a0** (tag v1.6.0, "Merge pull request
+  #438 from Tencent/release/v1.6.0"), two commits:
+  - 108bc38 stall fix in `select_send_path` + unit test;
+  - c51c237 `tquic::frame_path` debug log of every sent STREAM frame with its
+    path id (logging only; off unless that log target is enabled).
+- CLAUDE.md: `modprobe -a` (approved by the user).
+
+Evidence
+- `cargo build --release --all`: ok. `cargo test --release` and `cargo test`
+  (debug): 552 + 1 passed, 0 failed.
+- New test `conn_multipath_probing_path_cwnd_full` on stock v1.6.0 code:
+  **fails** (`assertion failed: !packets.is_empty()`: the client sends no
+  packet at all); with the fix: passes.
+
+The stall fix, and how it relates to hook b
+- Bug (v1.6.0, connection.rs `select_send_path`, first block): once the
+  connection is established, any path that needs PATH_CHALLENGE/RESPONSE is
+  returned first, without checking its congestion window. `send_packet` checks
+  the window before it writes validation frames, so if that path's window is
+  full the packet is empty and `send()` returns Done. The next `send()` picks
+  the same path again, so nothing (stream data, ACKs) leaves on any path until
+  that path's window opens, which needs ACKs that are not being sent. Seen in
+  the old design on trace replay with path B near 8 kbit/s during validation.
+- Fix: such a path is skipped while `recovery.can_send()` is false; selection
+  falls through to the normal multipath branch (scheduler, then ACK/PTO path,
+  then active path). Validation frames go out as soon as the window opens (the
+  test checks this too).
+- Effect on schedulers: identical for all of them; it only matters during path
+  validation, before the second path becomes active, so it cannot favour any
+  scheduler. Without it, a transfer could stall for reasons unrelated to the
+  scheduler under test.
+- Hook b (declined-send flag, not built yet) acts in a different place: after
+  `on_select` declines, the fallback to the ACK/PTO path or the active path must
+  not carry stream data. The fix changes only the probing block that runs
+  before `on_select`. The two cannot conflict: when the fix skips a probing
+  path, control reaches `on_select`, and if that declines, hook b applies as
+  designed. Hook b blocks stream data only, so PATH_CHALLENGE/RESPONSE on a
+  fallback path stays allowed. Hook b's unit tests (week 2) will rerun
+  `conn_multipath_probing_path_cwnd_full`.
+
+Next: Gate B (scenario presets, 200 ms buffer, outage and trace replay).

@@ -24,7 +24,9 @@ are reported, not hidden.
   netem delay on lo gave 50 ms ping). Repo at `~/acn-mpquic` on the Linux
   filesystem; never work under `/mnt/c` (slow, breaks permissions). The user
   works in VS Code connected to WSL; its terminal (Ctrl+`) is an Ubuntu shell.
-- Run `sudo modprobe sch_netem sch_tbf sch_htb` after every WSL restart.
+- Run `sudo modprobe -a sch_netem sch_tbf sch_htb` after every WSL restart
+  (without `-a`, modprobe loads only the first module and takes the other
+  names as its parameters; `testbed/up.sh` does this for you).
 - Root is needed only for `ip`, `tc`, `modprobe`. Test with `sudo -n true`. If
   sudo needs a password, give the user one exact command to paste into the VS
   Code terminal; never edit sudoers yourself.
