@@ -3,26 +3,37 @@
 # down any existing testbed first, so it also recovers after a WSL restart.
 #
 # Usage: testbed/up.sh [scenario]        default: symmetric
-#   Presets follow docs/proposal.md section 4. Override any value with env vars:
-#   A_RATE_KBIT A_RTT_MS B_RATE_KBIT B_RTT_MS QUEUE_MS
+#   Scenarios follow docs/proposal.md section 4 (rates in kbit/s, RTT in ms).
+#   Override any value with env vars: A_RATE_KBIT A_RTT_MS B_RATE_KBIT B_RTT_MS
+#   QUEUE_MS (bottleneck buffer per path, default 200 ms of the path's rate).
+#   real_pairs needs SITE=<dir under traces/> (see testbed/trace_site.py); its rates
+#   are the trace means (they size the buffers) and its delays the unloaded
+#   RTTs measured at the site.
+#   outage and real_pairs change rates over time: run testbed/replay.py too.
 #
 # Each veth end is shaped on egress, so both directions of a path see the same
 # link: netem adds RTT/2 of delay, then tbf limits the rate and holds a
-# bottleneck queue of QUEUE_MS worth of bytes at that rate.
+# bottleneck queue of QUEUE_MS worth of bytes at that rate. Data flows client
+# -> server (the lecturer's device is the client).
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
 source "$here/common.sh"
 
 scenario=${1:-symmetric}
 case $scenario in
-    symmetric) a_rate=4000 a_rtt=40 b_rate=4000 b_rtt=40 ;;
-    rtt_asym)  a_rate=4000 a_rtt=30 b_rate=4000 b_rtt=150 ;;
-    low_bw)    a_rate=1500 a_rtt=60 b_rate=1000 b_rtt=120 ;;
-    *) echo "up.sh: unknown scenario '$scenario' (symmetric|rtt_asym|low_bw)" >&2; exit 2 ;;
+    control)    a_rate=4000 a_rtt=40 b_rate=4000 b_rtt=40 ;;
+    symmetric)  a_rate=1600 a_rtt=40 b_rate=1600 b_rtt=40 ;;
+    rtt_asym)   a_rate=1600 a_rtt=30 b_rate=1600 b_rtt=150 ;;
+    bw_asym)    a_rate=2000 a_rtt=40 b_rate=1200 b_rtt=60 ;;
+    outage)     a_rate=1800 a_rtt=40 b_rate=1800 b_rtt=60 ;;
+    real_pairs)
+        [[ -n ${SITE:-} ]] || { echo "up.sh: real_pairs needs SITE=<traces/ subdir>" >&2; exit 2; }
+        eval "$(python3 -I "$here/trace_site.py" env "$SITE")" ;;
+    *) echo "up.sh: unknown scenario '$scenario' (control|symmetric|rtt_asym|bw_asym|outage|real_pairs)" >&2; exit 2 ;;
 esac
 A_RATE_KBIT=${A_RATE_KBIT:-$a_rate}; A_RTT_MS=${A_RTT_MS:-$a_rtt}
 B_RATE_KBIT=${B_RATE_KBIT:-$b_rate}; B_RTT_MS=${B_RTT_MS:-$b_rtt}
-QUEUE_MS=${QUEUE_MS:-100}
+QUEUE_MS=${QUEUE_MS:-200}
 
 # netem/tbf are modules in the WSL2 kernel and are not loaded after a restart.
 sudo modprobe -a sch_netem sch_tbf sch_htb
@@ -80,6 +91,7 @@ sudo "$IP" -n "$NS_CLI" rule add from "$CLI_B_IP" table 102 pref 102
 
 cat > "$STATE_FILE" <<EOF
 SCENARIO=$scenario
+SITE=${SITE:-}
 A_RATE_KBIT=$A_RATE_KBIT
 A_RTT_MS=$A_RTT_MS
 B_RATE_KBIT=$B_RATE_KBIT

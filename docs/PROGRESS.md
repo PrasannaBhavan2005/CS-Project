@@ -106,3 +106,39 @@ The stall fix, and how it relates to hook b
   `conn_multipath_probing_path_cwnd_full`.
 
 Next: Gate B (scenario presets, 200 ms buffer, outage and trace replay).
+
+## 2026-11-01: Gate B (scenario presets, replay): passed
+
+Done
+- `testbed/up.sh`: scenarios control, symmetric, rtt_asym, bw_asym, outage,
+  real_pairs (proposal section 4), buffer 200 ms of each path's rate.
+- `testbed/replay.py` (adapted from the archived one): outage schedule and
+  trace replay; logs each device's starting rate and every change.
+- `testbed/trace_site.py` + site format `traces/<site>/site.json` and csv
+  `t_ms,mbps,capped,loaded_rtt_ms` (CLAUDE.md's layout line says `t_ms, mbps,
+  rtt_ms`; the RTT is now split into unloaded (site.json, used as the replay
+  delay) and loaded (csv, reference only), as the user specified on 1 Nov).
+- `traces/public_mahimahi/`: two public Mahimahi uplink traces (AT&T LTE,
+  T-Mobile UMTS) as a calibration fixture only; their RTTs (40/60 ms) are
+  configured, not measured. Not evidence for any hypothesis.
+
+Evidence
+- Every scenario comes up; `tc` shows the configured netem delay (RTT/2) and
+  tbf rate on each veth end. State file records scenario, site, rates, RTTs.
+- Outage schedule computed over 64 s: drops start at 15 s (A), 30 s (B),
+  45 s (A), 60 s (B), each lasting 2.0 s. A 3 s replay from offset 14.5 s set
+  cA and sA to 8 kbit at t = 500 ms and back to 1800 kbit at t = 2500 ms.
+- real_pairs replay from offset 60 s applied the trace bin by bin (cA:
+  1560, 1200, ... kbit, matching rows 601-621 of the trace); cB went to
+  8 kbit (a zero bin, clamped to the tbf minimum).
+
+Interpretation choices (not hypotheses; flagged to the user)
+- Outage "each path in turn at 0 for 2 s every 15 s": implemented as one
+  outage every 15 s, alternating A, B, A, ... (each path once per 30 s), both
+  directions, "0" = 8 kbit/s (tbf minimum; about one 1500-byte packet per
+  1.5 s).
+- real_pairs: traces shape the data direction (client -> server); the reverse
+  direction (ACKs) stays at the trace mean; buffer bytes fixed at 200 ms of the
+  trace mean.
+
+Next: Gate C (calibration report).

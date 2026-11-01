@@ -1,0 +1,10 @@
+{
+  "site": "public_mahimahi",
+  "kind": "public, for emulator calibration only (not evidence for H1-H5)",
+  "source": "Mahimahi traces/ (https://github.com/ravinet/mahimahi, commit f1346c3, GPLv3; Netravali et al., USENIX ATC 2015), uplink, converted with traces/convert_mahimahi.py",
+  "paths": {
+    "A": {"operator": "AT&T LTE, driving", "trace": "att_lte_driving.up.csv", "unloaded_rtt_ms": 40},
+    "B": {"operator": "T-Mobile UMTS, driving", "trace": "tmobile_umts_driving.up.csv", "unloaded_rtt_ms": 60}
+  },
+  "rtt_note": "Mahimahi traces carry no RTT; 40 and 60 ms are configured values for calibration, not measurements."
+}

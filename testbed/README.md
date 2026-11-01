@@ -14,7 +14,7 @@ The client reaches the server address over A or B depending on which local
 address a socket is bound to (policy routing tables 101 and 102), so each QUIC
 path is pinned to one veth pair. Every veth end shapes its egress: `netem`
 adds RTT/2 of delay, then `tbf` limits the rate with a bottleneck queue of
-`QUEUE_MS` (default 100 ms) worth of bytes. Both directions of a path therefore
+`QUEUE_MS` (default 200 ms) worth of bytes. Both directions of a path therefore
 see the same link.
 
 ## One-time setup
@@ -40,7 +40,7 @@ The scripts call `/usr/bin/ip` by full path: plain `sudo ip` resolves to the
 
 ## Week 1, check 1: build TQUIC and run its tests
 
-TQUIC is the submodule `third_party/tquic`, pinned to tag v1.6.0, on local
+TQUIC is the submodule `third_party/tquic`, based on tag v1.6.0 (d87a9a0), on local
 branch `team7` (our scheduler commits go there). BoringSSL is its own nested
 submodule and builds through cmake; Go is not needed.
 
@@ -65,22 +65,42 @@ cd third_party/tquic && bash tools/tests/tquic_tools_test.sh -b "$PWD/target/rel
 old testbed, and builds a fresh one, so it is always safe to rerun.
 
 ```bash
-testbed/up.sh symmetric
-```
-
-```bash
-testbed/check.sh
+testbed/up.sh rtt_asym
 ```
 
 ```bash
 testbed/down.sh
 ```
 
-Presets (from `docs/proposal.md` section 4): `symmetric` (4/4 Mbit, 40/40 ms),
-`rtt_asym` (4/4 Mbit, 30/150 ms), `low_bw` (1.5/1 Mbit, 60/120 ms). Override any
-value with env vars, e.g. `QUEUE_MS=50 B_RTT_MS=80 testbed/up.sh symmetric`.
-`check.sh` pings each path (RTT) and runs a 5 s iperf3 TCP download over it
-(rate); expect TCP goodput a little under the configured rate (headers).
+Scenarios (`docs/proposal.md` section 4; rate in kbit/s / RTT in ms; every
+path has a 200 ms buffer, `QUEUE_MS`):
+
+| scenario | path A | path B | changes over time |
+| --- | --- | --- | --- |
+| `control` | 4000 / 40 | 4000 / 40 | no |
+| `symmetric` | 1600 / 40 | 1600 / 40 | no |
+| `rtt_asym` | 1600 / 30 | 1600 / 150 | no |
+| `bw_asym` | 2000 / 40 | 1200 / 60 | no |
+| `outage` | 1800 / 40 | 1800 / 60 | `replay.py`: every 15 s one path, in turn (A at 15 s, B at 30 s, ...), drops to 8 kbit/s for 2 s, both directions |
+| `real_pairs` | trace | trace | `SITE=<dir> testbed/up.sh real_pairs`; `replay.py` sets the data direction (client -> server) from the traces every 100 ms |
+
+Override any value with env vars, e.g. `QUEUE_MS=50 testbed/up.sh symmetric`.
+Data flows client -> server: the lecturer's device is the client. For
+`real_pairs`, `up.sh` sets each path's delay to the site's unloaded RTT and its
+rate (both directions) to the trace mean, which also sizes the buffer; the
+reverse direction stays at the mean during replay. Site format:
+`traces/<site>/site.json` + one csv per path (`docs/trace_collection.md`);
+`python3 testbed/trace_site.py stats <site>` summarises one.
+
+Replay (after `up.sh outage` or `up.sh real_pairs`; stops after
+`--duration-s` or on SIGTERM; `--offset-ms` starts the schedule later):
+
+```bash
+python3 testbed/replay.py /tmp/replay.csv --duration-s 70
+```
+
+The log has one row per rate change (`mono_us,t_ms,dev,kbit`, CLOCK_MONOTONIC)
+plus every device's starting rate.
 
 Inspect by hand:
 
