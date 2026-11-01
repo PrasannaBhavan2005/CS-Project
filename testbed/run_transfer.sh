@@ -5,14 +5,14 @@
 #
 # Usage: testbed/run_transfer.sh <scenario> [scheduler ...]
 #   schedulers default to "minrtt roundrobin"; RUNS (default 5) runs each.
-#   Env: RUNS, RUN_START (first run_id, default 1; use it to add runs without
-#   overwriting old ones), CC (congestion control, default bbr = TQUIC's
-#   default), TIMEOUT_S (client timeout, default 300), LOG_LEVEL (default
+#   Env: RUNS, RUN_START (first run_id, default 1; existing run directories are
+#   never overwritten), CC (congestion control, default cubic, the project's
+#   stack; TQUIC's own default is bbr), TIMEOUT_S (client timeout, default 300), LOG_LEVEL (default
 #   info; trace shows why the sender holds back), FILE_BYTES (default 10 MiB),
 #   SEED (default 7, for the file content)
-# Output: results/<scenario>/<scheduler>/<run_id>/ with logs, qlogs, counter
-#   snapshots and summary.csv; then a table over all runs of the scenario.
-#   With a CC other than bbr the directory is <scheduler>-<cc>.
+# Output: results/week1_transfer/<scenario>/<scheduler>-<cc>/<run_id>/ with
+#   logs, qlogs, counter snapshots and summary.csv; then a table over all runs
+#   of the scenario.
 #
 # The server sends the file, so the server's --multipath-algor is the one that
 # decides which path the data takes. Both ends get the same value.
@@ -26,7 +26,7 @@ shift
 if (( $# )); then schedulers=("$@"); else schedulers=(minrtt roundrobin); fi
 RUNS=${RUNS:-5}
 RUN_START=${RUN_START:-1}
-CC=${CC:-bbr}
+CC=${CC:-cubic}
 TIMEOUT_S=${TIMEOUT_S:-300}
 LOG_LEVEL=${LOG_LEVEL:-info}
 FILE_BYTES=${FILE_BYTES:-10485760}
@@ -66,10 +66,11 @@ snapshot() {
 }
 
 for sched in "${schedulers[@]}"; do
-    label=$sched; [[ $CC == bbr ]] || label=$sched-$CC
+    label=$sched-$CC
     for run_id in $(seq "$RUN_START" $(( RUN_START + RUNS - 1 ))); do
-        out=$repo/results/$scenario/$label/$run_id
-        rm -rf "$out"; mkdir -p "$out"
+        out=$repo/results/week1_transfer/$scenario/$label/$run_id
+        [[ -e $out ]] && { echo "run_transfer.sh: $out exists; results are never overwritten" >&2; exit 1; }
+        mkdir -p "$out"
 
         # Fresh namespaces per run: empty queues, counters near zero.
         "$here/up.sh" "$scenario" > "$out/testbed.txt"
@@ -77,6 +78,7 @@ for sched in "${schedulers[@]}"; do
           echo "SCHEDULER=$label"; echo "RUN_ID=$run_id"; echo "CC=$CC"
           echo "FILE_BYTES=$FILE_BYTES"; echo "SEED=$SEED"
           echo "TQUIC_COMMIT=$(git -C "$repo/third_party/tquic" rev-parse HEAD)"
+          echo "REPO_GIT=$(git -C "$repo" rev-parse --short HEAD)$(git -C "$repo" diff --quiet HEAD -- testbed analysis || echo -dirty)"
           echo "DATE=$(date -Iseconds)"; } > "$out/meta.env"
 
         # stderr goes to a file: startup errors land there, and so does bash's
@@ -94,7 +96,8 @@ for sched in "${schedulers[@]}"; do
         done
 
         snapshot "$out" before
-        t0=$(date +%s.%N)
+        # Monotonic clock: WSL2 steps the wall clock.
+        t0=$(python3 -I -c 'import time; print(time.monotonic())')
         status=0
         timeout "$TIMEOUT_S" sudo "$IP" netns exec "$NS_CLI" runuser -u "$RUN_AS" -- "$bin/tquic_client" \
             -c "$SRV_IP:$SRV_PORT" --enable-multipath --multipath-algor "$sched" \
@@ -103,7 +106,7 @@ for sched in "${schedulers[@]}"; do
             --dump-dir "$out/dump" --qlog-dir "$out/qlog_client" \
             --log-file "$out/client.log" --log-level "$LOG_LEVEL" \
             "https://example.org/$file" > "$out/client.out" 2>&1 || status=$?
-        t1=$(date +%s.%N)
+        t1=$(python3 -I -c 'import time; print(time.monotonic())')
         snapshot "$out" after
         stop_server
 
@@ -120,4 +123,4 @@ for sched in "${schedulers[@]}"; do
 done
 
 "$here/down.sh"
-python3 -I "$repo/analysis/transfer_summary.py" table "$repo/results/$scenario"
+python3 -I "$repo/analysis/transfer_summary.py" table "$repo/results/week1_transfer/$scenario"

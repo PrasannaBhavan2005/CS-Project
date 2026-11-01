@@ -4,7 +4,9 @@
   transfer_summary.py table <scenario_dir> print all runs of a scenario
 
 Bytes per path come from the kernel veth counters (snapshots before and after
-the transfer); drops are from the tbf bottleneck queue on the server side.
+the transfer); drops are from the bottleneck queue (plug qdisc) on the server
+side. stalled = 1 when the file did not arrive complete (timeout or error):
+such runs are reported, never averaged in.
 """
 
 import csv
@@ -15,7 +17,7 @@ from pathlib import Path
 NS_CLI, NS_SRV = "mpq-cli", "mpq-srv"
 PATHS = {"a": ("cA", "sA"), "b": ("cB", "sB")}
 FIELDS = [
-    "scenario", "scheduler", "run_id", "file_ok", "transfer_s", "goodput_mbps",
+    "scenario", "scheduler", "run_id", "file_ok", "stalled", "transfer_s", "goodput_mbps",
     "down_bytes_a", "down_bytes_b", "share_a_pct", "share_b_pct",
     "up_bytes_a", "up_bytes_b", "drops_a", "drops_b",
 ]
@@ -35,10 +37,10 @@ def link_bytes(run_dir, ns, dev, direction):
     return get("after") - get("before")
 
 
-def tbf_drops(run_dir, ns, dev):
+def queue_drops(run_dir, ns, dev):
     def get(tag):
         return sum(q["drops"] for q in load(run_dir, tag, ns, "qdisc")
-                   if q["dev"] == dev and q["kind"] == "tbf")
+                   if q["dev"] == dev and q["kind"] == "plug")
     return get("after") - get("before")
 
 
@@ -47,12 +49,13 @@ def summarize_run(run_dir):
                 (run_dir / "meta.env").read_text().splitlines() if "=" in line)
     row = {"scenario": meta["SCENARIO"], "scheduler": meta["SCHEDULER"],
            "run_id": meta["RUN_ID"], "file_ok": meta["FILE_OK"],
+           "stalled": int(meta["FILE_OK"] != "1"),
            "transfer_s": round(float(meta["TRANSFER_S"]), 3)}
     for p, (cli_dev, srv_dev) in PATHS.items():
         # Download direction (server -> client) is what the scheduler splits.
         row[f"down_bytes_{p}"] = link_bytes(run_dir, NS_CLI, cli_dev, "rx")
         row[f"up_bytes_{p}"] = link_bytes(run_dir, NS_CLI, cli_dev, "tx")
-        row[f"drops_{p}"] = tbf_drops(run_dir, NS_SRV, srv_dev)
+        row[f"drops_{p}"] = queue_drops(run_dir, NS_SRV, srv_dev)
     total = row["down_bytes_a"] + row["down_bytes_b"]
     for p in PATHS:
         row[f"share_{p}_pct"] = round(100 * row[f"down_bytes_{p}"] / total, 1) if total else 0.0
@@ -65,7 +68,7 @@ def summarize_run(run_dir):
 
 
 def print_rows(rows):
-    cols = ["scheduler", "run_id", "file_ok", "transfer_s", "goodput_mbps",
+    cols = ["scheduler", "run_id", "file_ok", "stalled", "transfer_s", "goodput_mbps",
             "share_a_pct", "share_b_pct", "down_bytes_a", "down_bytes_b", "drops_a", "drops_b"]
     print("  ".join(f"{c:>12}" for c in cols))
     for r in rows:
