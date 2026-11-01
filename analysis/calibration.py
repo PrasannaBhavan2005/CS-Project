@@ -4,7 +4,8 @@
   calibration.py --csv out.csv <run_dir> ...   also write per-bin data
 
 Per path:
-- RTT: unloaded ping (10 Hz, 10 s) vs configured RTT.
+- RTT: unloaded ping (10 Hz, 10 s) vs configured RTT; loaded ping (during the
+  rate test, if recorded) vs RTT + buffer.
 - Rate: iperf3 server-side 100 ms bins of UDP payload, converted to wire bytes
   (payload + 42 B: UDP 8 + IPv4 20 + Ethernet 14; tbf counts the Ethernet
   header, see tc_cli.txt), vs the rate configured for that bin. For outage and
@@ -83,6 +84,8 @@ def analyse(run):
         base_shift = (int(m["IPERF_START_MONO_US"]) - rp_t0) / 1e6
     for p in "AB":
         n, mn, med, p95 = ping_stats(run / f"ping_{p}.txt")
+        lp = run / f"ping_loaded_{p}.txt"
+        loaded = ping_stats(lp)[2] if lp.exists() else None
         bins = [b for b in iperf_bins(run / f"iperf_{p}.json", payload)][:-1]
         bins = [b for b in bins if b[0] >= SKIP_S]
         if timed:
@@ -104,7 +107,7 @@ def analyse(run):
         sec = [(sum(meas[i:i + 10]), sum(exp[i:i + 10])) for i in range(0, len(meas) - 9, 10)]
         rel1 = [(a - b) / b for a, b in sec if b > 1000]
         res["paths"][p] = dict(
-            rtt_cfg=float(m[f"{p}_RTT_MS"]), ping_n=n, rtt_min=mn, rtt_med=med, rtt_p95=p95,
+            rtt_cfg=float(m[f"{p}_RTT_MS"]), ping_n=n, loaded_med=loaded, rtt_min=mn, rtt_med=med, rtt_p95=p95,
             offered=int(m[f"OFFERED_{p}_KBIT"]), bins=len(bins), shift=shift,
             meas_mean=statistics.fmean(meas), exp_mean=statistics.fmean(exp),
             rel_med=pct(rel, 0.5), rel_p5=pct(rel, 0.05), rel_p95=pct(rel, 0.95),
@@ -131,6 +134,10 @@ def fmt(r):
             f"| {p} | {v['rtt_cfg']:.0f} ms | {v['rtt_min']:.1f} / {v['rtt_med']:.1f} / {v['rtt_p95']:.1f} ms "
             f"| {v['exp_mean']:.0f} kbit/s | {v['meas_mean']:.0f} kbit/s "
             f"| {v['rel_p5']:+.1%} / {v['rel_med']:+.1%} / {v['rel_p95']:+.1%} | {one} | {sh} |")
+    for p, v in r["paths"].items():
+        if v["loaded_med"] is not None:
+            lines.append(f"\nPath {p}: loaded ping median {v['loaded_med']:.1f} ms "
+                         f"(configured RTT {v['rtt_cfg']:.0f} + buffer {m['QUEUE_MS']} ms).")
     for p, v in r["paths"].items():
         if v["low_bins"]:
             ms = [w for _, w, _ in v["low_bins"]]

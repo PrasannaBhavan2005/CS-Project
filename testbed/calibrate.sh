@@ -7,8 +7,10 @@
 #   real_pairs 60 s. Env: OFFSET_MS (replay start in the schedule, default 0).
 # Output: results/calibration/<scenario>[_<site>]/<run_id>/ with
 #   ping_{A,B}.txt   unloaded ping, 10 Hz for 10 s, client -> server, per path
+#   ping_loaded_{A,B}.txt ping during the rate test, 5 Hz for 10 s from its start
 #   iperf_{A,B}.json iperf3 server-side report, UDP client -> server, 100 ms bins
 #   replay.csv       rate changes (outage, real_pairs)
+#   client_{A,B}.txt iperf3 client output (errors)
 #   tc_{cli,srv}.txt `tc -s qdisc` after the test (bytes and packets per qdisc)
 #   meta.env         scenario state, offered rates, tool versions, git hashes
 #
@@ -75,9 +77,20 @@ if [[ $scenario == outage || $scenario == real_pairs ]]; then
     replay_pid=$!
 fi
 start_us=$(python3 -I -c 'import time; print(round(time.monotonic() * 1e6))')
-nsu "$NS_CLI" iperf3 -c "$SRV_IP" -B "$CLI_A_IP" -p 5201 -u -b "${off_A}k" -l $PAYLOAD -t "$dur" > /dev/null &
-nsu "$NS_CLI" iperf3 -c "$SRV_IP" -B "$CLI_B_IP" -p 5202 -u -b "${off_B}k" -l $PAYLOAD -t "$dur" > /dev/null &
-wait $(jobs -p | grep -v "^${replay_pid:-x}$")
+# iperf3's TCP control connection shares the path; long zero-rate stretches can
+# break it, so an iperf3 failure is recorded (meta.env), not fatal.
+nsu "$NS_CLI" iperf3 -c "$SRV_IP" -B "$CLI_A_IP" -p 5201 -u -b "${off_A}k" -l $PAYLOAD -t "$dur" > "$out/client_A.txt" 2>&1 &
+pid_A=$!
+nsu "$NS_CLI" iperf3 -c "$SRV_IP" -B "$CLI_B_IP" -p 5202 -u -b "${off_B}k" -l $PAYLOAD -t "$dur" > "$out/client_B.txt" 2>&1 &
+pid_B=$!
+# Loaded RTT (queue full): should be about RTT + QUEUE_MS.
+for p in A B; do
+    ip_var=CLI_${p}_IP
+    nsu "$NS_CLI" ping -c 50 -i 0.2 -I "${!ip_var}" "$SRV_IP" > "$out/ping_loaded_$p.txt" &
+done
+rc_A=0; wait $pid_A || rc_A=$?
+rc_B=0; wait $pid_B || rc_B=$?
+sleep 1
 [[ -n ${replay_pid:-} ]] && { kill "$replay_pid" 2>/dev/null || true; wait "$replay_pid" 2>/dev/null || true; }
 
 nsx "$NS_CLI" tc -s qdisc show > "$out/tc_cli.txt"
@@ -90,6 +103,8 @@ nsx "$NS_SRV" tc -s qdisc show > "$out/tc_srv.txt"
     echo "OFFERED_A_KBIT=$off_A"
     echo "OFFERED_B_KBIT=$off_B"
     echo "RUN_ID=$run_id"
+    echo "IPERF_EXIT_A=$rc_A"
+    echo "IPERF_EXIT_B=$rc_B"
     echo "IPERF_START_MONO_US=$start_us"
     echo "REPO_GIT=$(git -C "$repo" rev-parse --short HEAD)$(git -C "$repo" diff --quiet HEAD -- testbed || echo -dirty)"
     echo "KERNEL=$(uname -r)"
