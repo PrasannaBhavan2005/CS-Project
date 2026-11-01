@@ -2,7 +2,7 @@
 
   replay.py <log.csv> [--offset-ms N] [--duration-s S]
 
-Run after testbed/up.sh outage|real_pairs. Every 100 ms, sets the tbf rate of
+Run after testbed/up.sh outage|real_pairs. Every 100 ms, sets the htb class rate of
 each scheduled veth end through one long-running `tc -batch` per namespace (one
 sudo per namespace, not per change). Logs the starting rate of every device and
 then every change to log.csv (mono_us, t_ms, dev, kbit; mono_us is
@@ -30,7 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import trace_site  # noqa: E402
 
 TICK_MS = 100
-# tbf cannot be set to 0; at 8 kbit a full-size packet waits 1.5 s, so almost
+# A rate of 0 is not possible; at 8 kbit a full-size packet waits 1.5 s, so almost
 # nothing gets through and arriving packets queue or drop, as in a coverage hole.
 MIN_KBIT = 8
 DEVS = {"cA": "mpq-cli", "cB": "mpq-cli", "sA": "mpq-srv", "sB": "mpq-srv"}
@@ -67,7 +67,6 @@ def main():
     state_file = Path(os.environ.get("XDG_RUNTIME_DIR", "/tmp")) / "mpq-testbed.env"
     state = dict(l.split("=", 1) if "=" in l else (l, "")
                  for l in state_file.read_text().splitlines())
-    queue_ms = int(state["QUEUE_MS"])
     base = {"A": int(state["A_RATE_KBIT"]), "B": int(state["B_RATE_KBIT"])}
 
     sched = schedules(state)
@@ -94,12 +93,13 @@ def main():
                 kbit = max(f(a.offset_ms + k * TICK_MS), MIN_KBIT)
                 if last[dev] == kbit:
                     continue
-                # Same burst rule as up.sh; the queue limit stays at QUEUE_MS
-                # of the path's base rate.
+                # Same burst rule as up.sh. The bfifo under the class keeps
+                # its limit (QUEUE_MS of the base rate). Changing an htb class
+                # keeps its tokens (tbf would refill them on every change).
                 burst = max(kbit * 1000 // 8 // 250, 3028)
-                limit = max(base[dev[1]] * queue_ms // 8, 15140)
                 tc[DEVS[dev]].stdin.write(
-                    f"qdisc change dev {dev} parent 1:1 handle 10: tbf rate {kbit}kbit burst {burst} limit {limit}\n")
+                    f"class change dev {dev} parent 10: classid 10:1 htb rate {kbit}kbit "
+                    f"ceil {kbit}kbit burst {burst} cburst {burst} quantum 1514\n")
                 last[dev] = kbit
                 now = time.monotonic()
                 log.write(f"{round(now * 1e6)},{round((now - t0) * 1000)},{dev},{kbit}\n")

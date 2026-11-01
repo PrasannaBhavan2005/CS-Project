@@ -1,0 +1,15 @@
+qdisc noqueue 0: dev lo root refcnt 2 
+ Sent 0 bytes 0 pkt (dropped 0, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+qdisc netem 1: dev cA root refcnt 5 limit 100000 delay 20ms
+ Sent 8231292 bytes 6741 pkt (dropped 10257, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+qdisc tbf 10: dev cA parent 1:1 rate 720Kbit burst 3027b lat 198ms 
+ Sent 8231292 bytes 6741 pkt (dropped 10257, overlimits 91055 requeues 0) 
+ backlog 0b 0p requeues 0
+qdisc netem 1: dev cB root refcnt 5 limit 100000 delay 30ms
+ Sent 10533957 bytes 8595 pkt (dropped 9528, overlimits 0 requeues 0) 
+ backlog 0b 0p requeues 0
+qdisc tbf 10: dev cB parent 1:1 rate 1200Kbit burst 3027b lat 137ms 
+ Sent 10533957 bytes 8595 pkt (dropped 9528, overlimits 103753 requeues 0) 
+ backlog 0b 0p requeues 0

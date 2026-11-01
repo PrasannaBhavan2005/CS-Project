@@ -12,8 +12,11 @@
 #   outage and real_pairs change rates over time: run testbed/replay.py too.
 #
 # Each veth end is shaped on egress, so both directions of a path see the same
-# link: netem adds RTT/2 of delay, then tbf limits the rate and holds a
-# bottleneck queue of QUEUE_MS worth of bytes at that rate. Data flows client
+# link: netem adds RTT/2 of delay, then an htb class limits the rate and a
+# bfifo under it holds a bottleneck queue of QUEUE_MS worth of bytes at that
+# rate. Not tbf: tbf refills its whole bucket on every `tc change`, so trace
+# replay (a change every 100 ms) let extra bursts through; htb keeps its tokens
+# when a class is changed (docs/calibration.md). Data flows client
 # -> server (the lecturer's device is the client).
 set -euo pipefail
 here=$(cd "$(dirname "$0")" && pwd)
@@ -35,7 +38,7 @@ A_RATE_KBIT=${A_RATE_KBIT:-$a_rate}; A_RTT_MS=${A_RTT_MS:-$a_rtt}
 B_RATE_KBIT=${B_RATE_KBIT:-$b_rate}; B_RTT_MS=${B_RTT_MS:-$b_rtt}
 QUEUE_MS=${QUEUE_MS:-200}
 
-# netem/tbf are modules in the WSL2 kernel and are not loaded after a restart.
+# netem/htb are modules in the WSL2 kernel and are not loaded after a restart.
 sudo modprobe -a sch_netem sch_tbf sch_htb
 
 "$here/down.sh"
@@ -64,17 +67,19 @@ sudo "$IP" -n "$NS_SRV" addr add "$SRV_IP/32" dev lo
 shape() {
     local ns=$1 dev=$2 rate=$3 rtt=$4
     local owd_us=$(( rtt * 1000 / 2 ))
-    # tbf needs a few ms of tokens at high rates; never less than 2 packets.
+    # A few ms of tokens at high rates; never less than 2 packets.
     local burst=$(( rate * 1000 / 8 / 250 )); (( burst < 3028 )) && burst=3028
     local limit=$(( rate * QUEUE_MS / 8 ));   (( limit < 15140 )) && limit=15140
     nsx "$ns" sysctl -qw "net.ipv4.conf.$dev.rp_filter=0"
-    # Offloads off so tbf sees wire-sized packets, not GSO super-packets.
+    # Offloads off so the shaper sees wire-sized packets, not GSO super-packets.
     nsx "$ns" ethtool -K "$dev" tso off gso off gro off
     sudo "$IP" -n "$ns" link set "$dev" up
-    # Large netem limit: drops should happen only at the tbf bottleneck queue.
+    # Large netem limit: drops should happen only at the bottleneck queue.
     sudo tc -n "$ns" qdisc replace dev "$dev" root handle 1: netem delay "${owd_us}us" limit 100000
-    sudo tc -n "$ns" qdisc replace dev "$dev" parent 1:1 handle 10: \
-        tbf rate "${rate}kbit" burst "$burst" limit "$limit"
+    sudo tc -n "$ns" qdisc replace dev "$dev" parent 1:1 handle 10: htb default 1
+    sudo tc -n "$ns" class replace dev "$dev" parent 10: classid 10:1 \
+        htb rate "${rate}kbit" ceil "${rate}kbit" burst "$burst" cburst "$burst" quantum 1514
+    sudo tc -n "$ns" qdisc replace dev "$dev" parent 10:1 handle 11: bfifo limit "$limit"
 }
 shape "$NS_CLI" "$CLI_A" "$A_RATE_KBIT" "$A_RTT_MS"
 shape "$NS_SRV" "$SRV_A" "$A_RATE_KBIT" "$A_RTT_MS"
