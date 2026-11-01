@@ -140,78 +140,47 @@ testbed/run_transfer.sh rtt_asym
 ```
 
 Each call runs `RUNS` (default 5) downloads of a 10 MiB file (content from a
-fixed seed) per scheduler (default `minrtt roundrobin`; pass names to choose,
-e.g. `testbed/run_transfer.sh low_bw minrtt roundrobin redundant`). Every run
-rebuilds the testbed, so queues and counters start empty. Other knobs (env
-vars): `RUN_START` (first run_id, to add runs without overwriting), `CC`
-(`bbr` default, `cubic`, `bbr3`, `copa`; non-default results go to
-`<scheduler>-<cc>/`), `TIMEOUT_S` (default 300), `LOG_LEVEL` (`trace` logs per
-path why the sender holds back; debug/trace logs are gzipped). The table at the end
-is reprinted any time with:
+fixed seed) per scheduler (default `minrtt roundrobin`; pass names to choose).
+Every run rebuilds the testbed, so queues and counters start empty. Env vars:
+`RUN_START` (first run_id; existing runs are never overwritten), `CC`
+(default `cubic`), `TIMEOUT_S` (default 300), `LOG_LEVEL` (`trace` logs per
+path why the sender holds back; debug/trace logs are gzipped). Reprint the
+table with:
 
 ```bash
-python3 analysis/transfer_summary.py table results/symmetric
+python3 analysis/transfer_summary.py table results/week1_transfer/symmetric
 ```
 
-Per run, `results/<scenario>/<scheduler>/<run_id>/` holds `meta.env` (link
-parameters, TQUIC commit, exit code, file check, transfer time), `summary.csv`,
-before/after counter snapshots, client and server logs, and qlogs (git-ignored,
-about 4 MB per run).
+Per run, `results/week1_transfer/<scenario>/<scheduler>-<cc>/<run_id>/` holds
+`meta.env` (link parameters, TQUIC and repo commits, exit code, file check,
+transfer time), `summary.csv`, before/after counter snapshots, logs, and qlogs
+(git-ignored).
 
 How "uses both paths" is measured: TQUIC's qlog events carry no path id, so
 per-path bytes come from the kernel's veth counters (`down_bytes_a/b` = bytes
-received on `cA`/`cB` during the transfer). `drops_a/b` are tbf drops on the
-server side. The file flows server to client, so the scheduler that matters is
-the server's `--multipath-algor`; both ends get the same value.
+received on `cA`/`cB` during the transfer). `drops_a/b` are drops in the
+server-side bottleneck queue. The file flows server to client, so the
+scheduler that matters is the server's `--multipath-algor`; both ends get the
+same value. `stalled = 1` marks a run whose file did not arrive complete;
+such runs are reported, never averaged in.
 
-## Week 1 results (28 Oct 2026)
+## Week 1 results (1 Nov 2026)
 
-TQUIC v1.6.0 (`d87a9a0`), BBR (TQUIC's default), 10 MiB download, testbed as
-above. Commands: `testbed/run_transfer.sh symmetric` and
-`testbed/run_transfer.sh rtt_asym`, then extra rtt_asym runs with
-`RUN_START=6`/`7 RUNS=20 TIMEOUT_S=60 LOG_LEVEL=trace`.
+TQUIC `team7` c51c237 (v1.6.0 + stall fix + frame_path log), CUBIC, 10 MiB
+download, scenarios as above (1.6 + 1.6 Mbit/s, 200 ms buffers).
 
-1. **Build and tests:** release build of the library and tools in 1.5 min;
-   `cargo test` 552/552 passed in debug and in release. TQUIC's loopback tool
-   test passed for minrtt, roundrobin and redundant (all 4 paths received
-   packets, file identical).
-2. **Testbed:** `check.sh` on symmetric measured 40.5 ms RTT on both paths
-   (40 configured) and 3.56 Mbit/s of iperf3 TCP goodput (4 Mbit configured).
-   On rtt_asym, ping from each client address gives 30 ms and 150 ms minimum
-   RTT, so the policy routing keeps each path on its own veth pair.
-3. **Multipath transfer:** both paths carry about half the bytes under both
-   schedulers:
+| scenario | scheduler | runs | file OK | stalled | transfer time | goodput | share A | share B |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| symmetric (40/40 ms) | minrtt | 5 | 5 | 0 | 28.6-29.2 s | 2.87-2.93 Mbit/s | 50.1% | 49.9% |
+| symmetric | roundrobin | 5 | 5 | 0 | 28.6-28.7 s | 2.93-2.94 Mbit/s | 50.1% | 49.9% |
+| rtt_asym (30/150 ms) | minrtt | 5 | 5 | 0 | 29.0-29.4 s | 2.85-2.90 Mbit/s | 50.6-50.7% | 49.3-49.4% |
+| rtt_asym | roundrobin | 5 | 5 | 0 | 28.9-29.2 s | 2.87-2.90 Mbit/s | 50.5-50.7% | 49.3-49.5% |
 
-| scenario | scheduler | runs | file OK | median time | goodput | share A | share B |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| symmetric | minrtt | 6 | 6 | 11.85 s | 7.08 Mbit/s | 50.3% | 49.7% |
-| symmetric | roundrobin | 5 | 5 | 11.85 s | 7.08 Mbit/s | 50.3% | 49.7% |
-| rtt_asym | minrtt | 25 | 25 | 12.24 s | 6.85 Mbit/s | 51.7-52.4% | 47.6-48.3% |
-| rtt_asym | roundrobin | 26 | **25** | 12.20 s | 6.88 Mbit/s | 51.5-52.7% | 47.3-48.5% |
+Goodput is about 90% of the 3.2 Mbit/s the two paths carry together (headers,
+slow start). In a bulk transfer both congestion windows stay full, so even
+MinRTT on rtt_asym splits about evenly: it falls through to the 150 ms path
+whenever the 30 ms path's window is full. That is packet-level splitting, the
+behaviour the frame schedulers are meant to improve on for video.
 
-The veth counters agree with TQUIC's own count: in symmetric/minrtt/1 the
-client reports 10,747,543 bytes in 7,410 packets; adding 42 bytes of
-Ethernet/IP/UDP header per packet gives 11,058,763, against 11,059,173 on
-`cA`+`cB` (the 410-byte difference is ARP).
-
-Even on rtt_asym, MinRTT puts only 52% on the 30 ms path: in a bulk transfer
-both congestion windows stay full, so MinRTT falls through to the 150 ms path
-most of the time. That is the byte-level splitting the frame scheduler is meant
-to avoid.
-
-### Known issue: one stalled transfer (rtt_asym, roundrobin, run 5)
-
-The transfer stopped making progress after about 0.9 MB and the client timed
-out at 300 s (evidence in `results/rtt_asym/roundrobin/5/`, qlogs kept
-locally). From the qlogs: 21 packets were lost on path A in the first second
-(tbf drops); after that the server's congestion window stayed at 4.8-9.5 KB on
-both paths and it sent about one data packet every 1-2 s for 5 minutes, with no
-further loss. The client had every byte sent so far, in order, and flow
-control allowed 5 MB, so the sender alone was holding back; with BBR this
-points at a collapsed bandwidth estimate (pacing), but it is not confirmed.
-Unusually, this run had zero drops on path B (healthy runs: 140-180).
-
-It did not reproduce in 20 more roundrobin and 20 more minrtt runs on rtt_asym
-with trace logging (`LOG_LEVEL=trace` logs, per path, whether the pacer or the
-congestion window blocks sending). Rate so far: 1 in 26 roundrobin runs, 0 in
-25 minrtt runs. Week 2 must detect stalled runs rather than average them in.
+The 28 Oct runs (old presets, BBR, one stall in 26 round-robin runs on
+rtt_asym) are in git history (5fc8f5a) and on branch `archive/old-design`.

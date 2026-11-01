@@ -1,0 +1,10 @@
+
+finished in 28.089708124s, 0.04 req/s
+conns: total 1, finish 1, success 1, failure 0
+requests: sent 1, finish 1, success 1
+time for request(µs):
+	min: 28019358.00, max: 28019358.00, mean: 28019358.00, sd: NaN
+	median: 28019358.00, p80: 28019358.00, p90: 28019358.00, p99: 28019358.00
+recv pkts: 7470, sent pkts: 3686, lost pkts: 0
+recv bytes: 10760772, sent bytes: 136497, lost bytes: 0
+

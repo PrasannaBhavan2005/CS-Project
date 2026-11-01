@@ -180,3 +180,37 @@ Failed / excluded runs
   committed (the dirty check covered tracked files only).
 
 Next: Gate D (multipath transfers on the new scenarios, CUBIC).
+
+## 2026-11-01: Gate D (multipath transfer, both paths, MinRTT and RR): passed
+
+TQUIC multipath works; no picoquic fallback needed.
+
+Evidence (`results/week1_transfer/{symmetric,rtt_asym}/{minrtt,roundrobin}-cubic/1-5`,
+TQUIC c51c237, CUBIC, 10 MiB download)
+- 20 of 20 transfers complete, file identical, 0 stalled.
+- Both paths carry 49.3-50.7% of the bytes in every run (veth counters).
+- Goodput 2.85-2.94 Mbit/s of 3.2 Mbit/s combined; table in
+  `testbed/README.md`.
+- Direction: download (server sends), as in TQUIC's tools; the static
+  scenarios shape both directions alike. The streamer (week 2) sends client
+  -> server.
+
+## 2026-11-01: trace kit (`docs/trace_collection.md`): written
+
+- `docs/trace_collection.md` for teammates: VM setup (iperf3 on 5201/5202,
+  firewall incl. ICMP), Termux setup, UDP reachability check, recording
+  command (30 s idle ping, 600 s UDP 15 Mbit/s 1200 B with ping alongside,
+  30 s idle ping), site log template, hand-off.
+- `traces/collect/vm_server.sh` (VM: one iperf3 server per phone, 100 ms bins,
+  first-packet time on the VM clock) and `traces/collect/make_site.py`
+  (raw files -> `traces/<site>/a.csv, b.csv, site.json`; capped flag = bin
+  within 5% of the offered rate; unloaded RTT = median of idle pings; loaded
+  RTT per bin for reference).
+- make_site.py checked end to end on the testbed (server namespace standing in
+  for the VM, bw_asym): IP-level rates 1.97 / 1.18 Mbit/s for 2000 / 1200
+  kbit/s wire, unloaded RTT 40.3 / 60.3 ms, loaded 240 / 263 ms; capped flag
+  99% when the offered rate was set at capacity. The test site was deleted.
+  vm_server.sh not run here (needs tcpdump, not installed in WSL); its syntax
+  was checked only.
+- Not verified: Termux/Android `ping -D` output format and minimum interval;
+  the guide tells teammates to check `ping -D` first.

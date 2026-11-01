@@ -1,0 +1,2 @@
+scenario,scheduler,run_id,file_ok,stalled,transfer_s,goodput_mbps,down_bytes_a,down_bytes_b,share_a_pct,share_b_pct,up_bytes_a,up_bytes_b,drops_a,drops_b
+rtt_asym,roundrobin-cubic,2,1,0,29.174,2.88,5612058,5463006,50.7,49.3,143858,146233,44,38
