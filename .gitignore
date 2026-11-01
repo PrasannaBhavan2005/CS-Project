@@ -10,3 +10,8 @@ results/**/dump/
 results/**/*.log.gz
 
 __pycache__/
+workload/src/
+workload/*.mp4
+streamer/target/
+
+analysis/.venv/

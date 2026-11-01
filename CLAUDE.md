@@ -1,87 +1,184 @@
 # Team 7 ACN project: frame-aware multipath QUIC
 
-## Goal
-Stream a pre-encoded lecture video frame by frame over multipath QUIC with two
-emulated cellular paths. Measure how often transport-only schedulers make frames
-miss their playback deadline, then build a deadline-aware frame scheduler that
-does better. Full proposal: `docs/proposal.md` (scheduler design, scenarios,
-metrics, weekly plan).
+## What this project is
+A controlled measurement-and-design study: how much of two weak uplinks can an
+interactive live lecture use over Multipath QUIC, and does placing whole video
+frames on paths (instead of single packets) recover what packet-level schedulers
+waste? Full design, hypotheses, scenarios and metrics: `docs/proposal.md`
+(revised 1 Nov 2026). There is no ML component.
+
+Hypotheses H1-H5, their thresholds and the primary comparisons P1-P6
+(proposal section 2) are fixed. Never change them after experiments start. If
+you think one is wrong, tell the user before collecting data. Negative results
+are reported, not hidden.
+
+## Start of every session
+1. Read `docs/PROGRESS.md` (create it if missing): the running log of what
+   exists, what works, what failed and what is next.
+2. Check `git status` and `git log --oneline -15`.
+3. At the end of every work block, append a dated entry to `docs/PROGRESS.md`
+   (done / evidence / next / open issues) and commit.
 
 ## Environment
-- WSL2 (Ubuntu 24.04) on a Windows laptop. The repo lives at `~/acn-mpquic` on
-  the Linux filesystem; never work under `/mnt/c` (slow, breaks permissions).
-- netem is a kernel module in WSL2 (kernel 6.6+): `sch_netem`, `sch_tbf` and
-  `sch_htb` must be loaded after every WSL restart; `testbed/up.sh` does this.
-- Root is needed only for `ip`, `tc` and `modprobe`. If a sudo command asks for
-  a password, stop and give the user the exact command to run; never try to
-  change sudoers yourself.
-- `/etc/sudoers.d/acn-mpquic` allows passwordless `/usr/bin/ip`, `/usr/sbin/tc`
-  and `/usr/sbin/modprobe`. Call ip as `sudo /usr/bin/ip`: plain `sudo ip`
-  resolves to the `/usr/sbin/ip` symlink, which the rule does not match.
-- WSL may restart and wipe namespaces; `testbed/up.sh` must be safe to rerun.
+- WSL2 Ubuntu 24.04 on a Windows laptop, kernel 6.18; netem verified (a 25 ms
+  netem delay on lo gave 50 ms ping). Repo at `~/acn-mpquic` on the Linux
+  filesystem; never work under `/mnt/c` (slow, breaks permissions). The user
+  works in VS Code connected to WSL; its terminal (Ctrl+`) is an Ubuntu shell.
+- Run `sudo modprobe sch_netem sch_tbf sch_htb` after every WSL restart.
+- Root is needed only for `ip`, `tc`, `modprobe`. Test with `sudo -n true`. If
+  sudo needs a password, give the user one exact command to paste into the VS
+  Code terminal; never edit sudoers yourself.
+- WSL can restart and wipe namespaces: `testbed/up.sh` must be idempotent.
+- Long batches: remind the user to keep the laptop plugged in and awake.
+- The user prefers that you run commands and do hands-on steps yourself.
 
 ## Stack
-- QUIC: TQUIC (Rust), https://github.com/Tencent/tquic, vendored as a git submodule
-  under `third_party/tquic`, pinned to tag v1.6.0 (`d87a9a0`); our commits go
-  on its local branch `team7` (pushing needs a fork). Default congestion
-  control is BBR. Fallback if multipath is broken: picoquic (C).
-- Emulation: Linux network namespaces + veth pairs + `tc netem`/`tbf` (see
-  Environment for loading the modules in WSL2).
-- Workload: ffmpeg/ffprobe to get per-frame sizes and timestamps.
-- Analysis: Python (pandas, matplotlib).
+- QUIC: TQUIC (Rust), https://github.com/Tencent/tquic, git submodule at
+  `third_party/tquic`; our changes on branch `team7`. Fallback only if TQUIC
+  multipath fails by the week-1 gate: picoquic (C).
+- Emulation: network namespaces, veth pairs, `tc netem` (delay) + `tbf` (rate,
+  buffer = 200 ms of the path's rate); trace replay changes rate every 100 ms.
+- Workload: ffmpeg/x264 + ffprobe (frame sizes, types, timestamps).
+- Analysis: Python (pandas, matplotlib, scipy) in a venv at `analysis/.venv`.
 
-## Where the scheduler plugs into TQUIC
-- `src/multipath_scheduler/multipath_scheduler.rs` defines
-  `trait MultipathScheduler { on_select(paths, spaces, streams) -> Result<usize>;
-  on_sent(...); on_path_updated(...) }`.
-- Existing schedulers: `scheduler_minrtt.rs`, `scheduler_rr.rs`,
-  `scheduler_redundant.rs` (about 100 lines each). `on_select` returns the path
-  index for the next packet; `path.recovery.rtt.smoothed_rtt()` and
-  `path.recovery.can_send()` are what MinRTT uses.
-- To add a scheduler: new file, new variant in `enum MultipathAlgorithm`, its
-  name in `FromStr`, a match arm in `build_multipath_scheduler`, and
+## TQUIC facts (checked in source on 1 Nov 2026; re-verify line numbers)
+- Scheduler trait: `src/multipath_scheduler/multipath_scheduler.rs`,
+  `on_select(paths, spaces, streams) -> Result<usize>`, `on_sent`,
+  `on_path_updated`. Built in: MinRtt, Redundant, RoundRobin. New scheduler =
+  new file + enum variant + `FromStr` + `build_multipath_scheduler` +
   `buffer_required`.
-- `tools/src/bin/tquic_client.rs` opens one path per local address. Flags:
-  client `-c <addr:port> --local-addresses <a>,<b> --enable-multipath
-  --multipath-algor minrtt|roundrobin|redundant`; server `-l <addr:port>
-  --enable-multipath --multipath-algor ... --cert --key --root <dir>`. Each end
-  schedules its own packets, so for a download the server's algorithm decides
-  the data split.
-- Per-path accounting: TQUIC's qlog events carry no path id. Use the veth
-  counters (as `testbed/run_transfer.sh` does), the per-path `PathStats` in
-  `src/lib.rs` (not printed by the tools), or trace logs, where the connection
-  id ends in `-<path id>`.
+- Stats: `Path::stats() -> &PathStats` (`srtt`, `min_rtt`, `rttvar`,
+  `pacing_rate`, cwnd fields), `recovery.bytes_in_flight`, `recovery.can_send()`.
+  Public: `Connection::get_path_stats`, `paths_iter`, `add_path`,
+  `stream_set_priority`.
+- Known behaviours that affect results:
+  1. `try_write_stream_frames` (connection.rs ~2549) takes streams from one
+     global queue (`streams.peek_sendable()`) whatever the path.
+  2. When `on_select` declines, `select_send_path` falls back to the active path
+     (connection.rs ~3021) and `send_packet` writes stream data there if cwnd
+     allows, silently overriding a scheduler's decision to wait.
+  3. Stream default priority is urgency 127, incremental=true (stream.rs ~1830):
+     concurrent streams are round-robined.
+  4. CUBIC `pacing_rate` = cwnd/srtt (cubic.rs ~420); recovery passes
+     app_limited=false to `on_ack` (recovery.rs ~368), so cwnd grows while the
+     sender is application-limited (RFC 9002 section 7.8 says it should not).
+  5. No reinjection on a dead path: loss detection needs a later ACK,
+     `in_persistent_congestion` is a stub (recovery.rs ~417), PTO re-sends at
+     most 2 packets with backoff.
+  6. SendBuf reads from one `send_off`, so one stream cannot be sent from two
+     offsets on two paths; split frames use two streams.
+- The three hooks we add (week 2, each unit-tested, each small and commented):
+  a. Stream-to-path filter: `Connection::stream_set_path_preference(stream_id,
+     Option<path_id>)`, honoured in `try_write_stream_frames` via a path-aware
+     peek that skips streams preferred for another active path.
+  b. Declined-send flag: when the scheduler chooses to wait, the fallback path
+     may send control frames/ACKs but not stream data (needed for ECF and F1).
+  c. RFC 9002 7.8 app-limited rule for CUBIC (no cwnd growth when not
+     cwnd-limited), applied to every scheduler, only if a test confirms (4).
+- Every scheduler sets every frame stream to non-incremental priority (strict
+  frame order).
 
-## Repo layout (proposed)
+## Schedulers and references (IDs used in code, results paths, plots)
+| ID | What | Where |
+| --- | --- | --- |
+| S0 | best single path (higher mean capacity) | multipath off |
+| S1 | MinRTT | TQUIC built-in |
+| S2 | round-robin | built-in |
+| S3 | redundant | built-in |
+| S4 | ECF (Lim et al., CoNEXT 2017) | new TQUIC scheduler + hook b |
+| F1 | whole frame on path with earliest predicted finish | streamer + hooks a, b |
+| F2 | F1 + balanced split + rescue | streamer + hooks a, b |
+| A1 | F2 logic over two separate single-path QUIC connections | streamer only |
+| R1 | ideal link: one path, rate = sum, RTT = lower of the two | testbed only |
+| R2 | F2 using the true trace rates instead of estimates | streamer |
+
+Finish-time estimate for a frame part of S bytes on path p:
+`T_p = (U_p + S)/R_p + (srtt_p - min_rtt_p) + min_rtt_p/2`
+U_p = bytes assigned to p not yet sent. R_p = measured delivery rate: bytes
+acknowledged on p per interval, max over the last 1 s (do NOT use TQUIC
+pacing_rate). F2 split, used whenever it lowers predicted finish (never depends
+on D), with d_p = (srtt_p - min_rtt_p) + min_rtt_p/2, clamped to [0, S]:
+`S_a = ((U_b + S)/R_b + d_b - U_a/R_a - d_a) / (1/R_a + 1/R_b)`.
+Rescue (F2, A1): if a path shows no ACK progress for one PTO, resend its
+unfinished frame parts as new streams on the other path. Each stream starts with
+a small header `{frame_id, offset, length, frame_size}`; the receiver completes a
+frame when the union of received ranges covers [0, frame_size).
+Unit-test the estimator, split, and receiver reassembly with hand-computed cases.
+
+## Measurement definitions (implement exactly)
+- Deadline: `capture_ts + D`; D swept 100..1000 ms offline; primary D = 250 ms,
+  also report 150 and 400 ms.
+- Display rule: frame i is on time iff max(completion time over i and every
+  frame it depends on) <= its deadline. Dependencies: periodic keyframes = all
+  frames since the last I-frame; intra-refresh = all earlier frames.
+- Freeze: gap between consecutive displayed frames >= max(3 * frame_interval,
+  frame_interval + 150 ms); freeze time = sum of such gaps.
+- Required playout delay: smallest D with >= 99% frames on time.
+- Usable capacity: highest swept bitrate with freeze time <= 1% at D = 250 ms,
+  divided by R1's usable capacity in the same scenario.
+
+## Workload and scenarios
+- Main clip: 60 s camera lecture at a blackboard (NPTEL, CC BY-NC-SA). Controls:
+  tablet handwriting, slides. Keep videos out of git; add a download script.
+- Encodings (x264 zerolatency, CBR, vbv-maxrate = bitrate, vbv-bufsize = 0.5 s):
+  main = intra-refresh; stress = keyframe every 2 s. Record exact ffmpeg commands.
+- Main bitrate 2.6 Mbps; sweeps 0.5 Mbps to 1.1x combined capacity (6 points).
+- Scenarios: control 4+4 Mbps @40/40 ms; symmetric 1.6+1.6 @40/40; rtt_asym
+  1.6+1.6 @30/150; bw_asym 2.0+1.2 @40/60; outage 1.8+1.8 @40/60 with each path
+  in turn at 0 for 2 s every 15 s; real_pairs = simultaneous two-operator traces
+  from 3 sites (RTT values = RTT, split evenly per direction).
+
+## Experiments
+- One command per run: `scripts/run.sh <scenario> <config> <bitrate_kbps>
+  <encoding> <clip> <run_id>`; batch drivers loop over it.
+- Output: `results/<scenario>/<config>/<bitrate>_<encoding>_<clip>/<run_id>/`
+  with `frames.csv`, `paths.csv`, qlog, `cpu.csv`, `meta.json` (git hashes of
+  repo and TQUIC, seed, clip offset, trace offset, tool versions, start time).
+- 8 runs per cell; clip start and trace start drawn from a fixed seed per run_id
+  and identical for every config (paired design).
+- Stats: P1-P6 paired Wilcoxon + Holm; equivalence claims TOST with 5% margin;
+  everything else 95% bootstrap CIs.
+- Budget ~1,200 runs (~24 h): main 10 configs x 8 scenarios x 8; stress
+  (S1, S4, F1, F2, R1) x (rtt_asym, bw_asym, 1 real site) x 8; sweeps
+  (S1, S4, F2, R1) x (rtt_asym, 1 real site) x 6 bitrates x 8; controls
+  (S0, S1, F2, R1) x rtt_asym x 2 contents x 8.
+- Discard and rerun any run whose sender or receiver CPU exceeds 80%; log it.
+- Never hand-edit or delete results; failed runs go in PROGRESS.md.
+
+Per-frame log (`frames.csv`, one row per frame, one clock):
+`frame_id, frame_type, size_bytes, capture_ts_us, send_start_us,
+complete_ts_us, bytes_path0, bytes_path1, rescued, config, scenario,
+bitrate_kbps, encoding, clip, run_id`.
+
+## Repo layout
 ```
-third_party/tquic/        # submodule, our scheduler commits on a branch
-streamer/                 # Rust sender/receiver: one QUIC stream per frame
-testbed/                  # namespace + tc scripts, trace replay
-traces/                   # cellular traces (csv: t_ms, mbps)
-workload/                 # frame trace of the lecture (csv)
-analysis/                 # notebooks and plot scripts
-results/                  # raw per-run logs, never edited by hand
+third_party/tquic/   submodule; our scheduler + hooks on branch team7
+streamer/            Rust sender/receiver, frame parts as streams
+testbed/             up.sh, down.sh, replay.py, calibrate.sh
+scripts/             run.sh and batch drivers
+traces/              csv: t_ms, mbps, rtt_ms; one file per path per site
+workload/            download script, encode script, frame traces (csv)
+analysis/            playout model, metrics, stats, plots
+results/             raw runs, never edited by hand
+docs/                proposal.md, PROGRESS.md, trace_collection.md
 ```
 
-## Per-frame log (receiver, one CSV row per frame)
-`frame_id, frame_type, size_bytes, send_ts_us, complete_ts_us, deadline_us,
-bytes_path0, bytes_path1, scheduler, scenario, run_id`
-
-## Week 1 (Oct 29 to Nov 4): done when all three pass (all passed 28 Oct)
-1. TQUIC builds; its own test suite passes.
-2. `testbed/up.sh` creates client and server namespaces joined by two veth pairs,
-   each with its own netem delay and rate; `testbed/down.sh` removes them.
-3. A file transfer with multipath enabled uses both paths (per-path bytes from
-   the veth counters) under MinRTT and round-robin.
-
-Commands and results: `testbed/README.md`. Known issue: 1 of 26 round-robin
-runs on rtt_asym stalled (sender almost idle after early losses, likely BBR);
-not reproduced since. Experiment scripts must flag stalled runs, not average
-them in.
+## Plan and gates (demo assumed week of 23 Nov)
+- Week 1 (to Nov 4), gate = calibrated two-path testbed: TQUIC builds, tests
+  pass; `testbed/up.sh`/`down.sh`; calibration report; multipath transfer using
+  both paths under MinRTT and round-robin; `docs/trace_collection.md` (cloud VM
+  iperf3 server setup, phone steps with Termux iperf3 UDP offered above
+  capacity, ping alongside, 10-15 min per site, ~1 GB per phone per site, UDP
+  reachability check); encode the main clip in both modes.
+- Week 2 (to Nov 11), decision point: streamer + analysis pipeline; hooks a-c
+  with unit tests; S0-S4 on synthetic scenarios; RQ1 from traces (3 sites by
+  Nov 9). Report H1 and H2 outcomes to the user before building F1/F2.
+- Week 3 (to Nov 18): F1, F2, A1, R1, R2; full matrix; sweeps; stress case.
+- Week 4 (to Nov 25): stretch (BBR, 50 ms buffer, real-world spot check);
+  statistics; plots; report material.
 
 ## Rules
-- Change TQUIC only inside `src/multipath_scheduler/` plus minimal hooks; keep
-  each change small and commented.
-- Every experiment runs from one script with the scenario name as argument and
-  writes to `results/<scenario>/<scheduler>/<run_id>/`.
-- Fixed random seeds; at least 5 runs per scheduler and scenario.
+- Change TQUIC only in `src/multipath_scheduler/` plus hooks a-c; keep changes
+  small, commented, unit-tested.
+- Small commits with clear messages.
+- Do not invent numbers or results. If something doesn't work, say so plainly.
