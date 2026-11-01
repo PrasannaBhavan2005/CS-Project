@@ -357,3 +357,10 @@ TQUIC suite: 564 + 1 pass.
 
 Batch `week2_s0s4_v2` started with the fixed build (same cells, run ids 1-8).
 Dev runs (run_id 0 and 91) remain under results/ and are never analysed.
+
+## 2026-11-01: final demo moved to 17 Nov (user)
+
+CLAUDE.md and proposal section 8: week 3 = Nov 12-14 (F1, F2, A1, R2, full
+matrix, sweeps, stress; overnight batches), Nov 15-17 = statistics, plots,
+report, slides; stretch items only if time is left. About 1,240 runs (~25 h)
+now have to fit in about four nights from Nov 11. Hypotheses unchanged.

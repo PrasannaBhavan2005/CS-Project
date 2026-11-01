@@ -168,7 +168,7 @@ results/             raw runs, never edited by hand
 docs/                proposal.md, PROGRESS.md, trace_collection.md
 ```
 
-## Plan and gates (demo assumed week of 23 Nov)
+## Plan and gates (final demo 17 Nov 2026)
 - Week 1 (to Nov 4), gate = calibrated two-path testbed: TQUIC builds, tests
   pass; `testbed/up.sh`/`down.sh`; calibration report; multipath transfer using
   both paths under MinRTT and round-robin; `docs/trace_collection.md` (cloud VM
@@ -178,9 +178,10 @@ docs/                proposal.md, PROGRESS.md, trace_collection.md
 - Week 2 (to Nov 11), decision point: streamer + analysis pipeline; hooks a-c
   with unit tests; S0-S4 on synthetic scenarios; RQ1 from traces (3 sites by
   Nov 9). Report H1 and H2 outcomes to the user before building F1/F2.
-- Week 3 (to Nov 18): F1, F2, A1, R1, R2; full matrix; sweeps; stress case.
-- Week 4 (to Nov 25): stretch (BBR, 50 ms buffer, real-world spot check);
-  statistics; plots; report material.
+- Week 3 (Nov 12-14): F1, F2, A1, R2; full matrix; sweeps; stress case
+  (overnight batches).
+- Nov 15-17: statistics, plots, report, slides; final demo 17 Nov. Stretch
+  items (BBR, 50 ms buffer, real-world spot check) only if time is left.
 
 ## Rules
 - Change TQUIC only in `src/multipath_scheduler/` plus hooks a-c; keep changes

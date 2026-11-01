@@ -185,11 +185,11 @@ Baselines and prior art: MPQUIC (CoNEXT 2017), ECF (CoNEXT 2017), BLEST (2016),
 XLINK (SIGCOMM 2021), DEMS (MobiCom 2017), stream-aware MPQUIC (EPIQ 2018),
 PStream (ICCCN 2020).
 
-## 8. Plan (assumes final demo week of Nov 23)
+## 8. Plan (final demo 17 Nov 2026)
 
 | Week | Dates | Work | Gate |
 | --- | --- | --- | --- |
 | 1 | Oct 29-Nov 4 | TQUIC, two-path testbed, calibration, trace kit, first site, encode main clip | calibrated two-path testbed |
 | 2 | Nov 5-11 | streamer + analysis, the 3 hooks + unit tests, S0-S4 runs, RQ1 from traces (3 sites by Nov 9) | decision: H1 and H2 |
-| 3 | Nov 12-18 | F1, F2, A1, R2; full matrix; sweeps; 2-s GOP stress; R1 reference | every config on every scenario |
-| 4 | Nov 19-25 | BBR (stretch), spot check (stretch), statistics, plots, report, slides | |
+| 3 | Nov 12-14 | F1, F2, A1, R2; full matrix; sweeps; 2-s GOP stress; R1 reference (overnight batches) | every config on every scenario |
+| 4 | Nov 15-17 | statistics, plots, report, slides; final demo Nov 17; stretch (BBR, spot check) only if time is left | |
