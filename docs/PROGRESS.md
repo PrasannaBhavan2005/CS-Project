@@ -331,3 +331,29 @@ Evidence
 Batch `week2_s0s4` (started 1 Nov evening): SCENARIOS control symmetric
 rtt_asym bw_asym outage x CONFIGS S0-S4 x RUN_IDS 1-8, 2600 kbit/s, intra,
 stochastic. Log: results/batches/week2_s0s4.log. Expected ~4-5 h.
+
+## 2026-11-01 evening: first S0-S4 batch stopped; two bugs fixed; batch restarted
+
+The first batch (`week2_s0s4`, build 40d0216 / TQUIC f60aecc) was stopped
+after 23 runs. Its runs are invalid and were moved, unchanged, to
+`results/_superseded/week2_s0s4_build40d0216/` (with its log); not analysed.
+
+1. Sender bug (mine): `stream_write` returns Done when the connection has no
+   send capacity (here: during a 2 s outage); the sender treated it as fatal
+   and exited ("Error: Done"; outage/S0/1 completed 165 of 1500 frames).
+   Now Done = nothing written, the frame waits for on_stream_writable.
+   build_frames.py now skips (and counts) a log line cut short by a crash.
+2. Hook c bug (mine, TQUIC 4d7481d): CUBIC's on_ack returned before updating
+   pacing_rate = cwnd/srtt on application-limited ACKs. After an outage the
+   rate set while srtt was ~2 s stayed frozen (0.21 Mbit/s while cwnd was
+   47 KB and srtt back to 45 ms), the sender stayed pacing-limited, every ACK
+   looked application-limited, and the path never recovered (outage dev run
+   0: 717 of 1500 frames). RFC 9002 7.8 only forbids window growth; pacing is
+   now refreshed. New test cubic_app_limited_ack_updates_pacing_only fails
+   without the fix. This could also slow non-outage runs whenever srtt rose,
+   which is why every run of the first batch is discarded, not just outage.
+   After both fixes: outage dev runs 91 (S0, S1) complete 1500/1500.
+TQUIC suite: 564 + 1 pass.
+
+Batch `week2_s0s4_v2` started with the fixed build (same cells, run ids 1-8).
+Dev runs (run_id 0 and 91) remain under results/ and are never analysed.

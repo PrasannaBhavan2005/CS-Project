@@ -1,0 +1,5 @@
+69738700143 INFO mpq_sender: connecting 10.10.1.1:33749 -> 10.10.0.1:4433
+69738784213 INFO mpq_sender: CLIENT-dbf9791e12db7549 established
+69739784671 INFO mpq_sender: streaming 1500 frames from offset 1450 over 1 path(s)
+69859794629 WARN mpq_sender: giving up after 120 s
+69859794635 INFO mpq_sender: sent 1500 of 1500 frames

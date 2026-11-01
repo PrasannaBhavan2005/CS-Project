@@ -1,0 +1,6 @@
+68325043850 INFO mpq_sender: connecting 10.10.1.1:38504 -> 10.10.0.1:4433
+68325133416 INFO mpq_sender: CLIENT-df4066066f20fb49 established
+68325133428 INFO mpq_sender: added path 10.10.2.1:57742 -> 10.10.0.1:4433
+68326134509 INFO mpq_sender: streaming 1500 frames from offset 150 over 2 path(s)
+68386399565 INFO mpq_sender: CLIENT-df4066066f20fb49 closed
+68386399683 INFO mpq_sender: sent 1500 of 1500 frames

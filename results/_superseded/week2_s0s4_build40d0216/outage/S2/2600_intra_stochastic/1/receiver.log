@@ -1,0 +1,5 @@
+69549820635 INFO mpq_receiver: listening on 10.10.0.1:4433
+69550134115 INFO mpq_receiver: SERVER-98f8f21809956f1f established
+69660041239 INFO tquic::connection: SERVER-98f8f21809956f1f idle timeout
+69660041282 INFO mpq_receiver: SERVER-98f8f21809956f1f closed
+69660041886 INFO mpq_receiver: 545 of 1500 frames complete

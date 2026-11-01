@@ -138,6 +138,10 @@ impl TransportHandler for Handler {
             Ok(_) => {
                 let _ = conn.stream_want_write(stream_id, false);
             }
+            // Still no capacity: keep the tail and wait for the next callback.
+            Err(tquic::Error::Done) => {
+                st.pending.insert(stream_id, tail);
+            }
             Err(e) => warn!("stream {stream_id} write: {e:?}"),
         }
     }
@@ -249,7 +253,14 @@ fn main() -> Result<(), Box<dyn Error>> {
                         data[..HEADER_LEN].copy_from_slice(&h.encode());
                         let data = Bytes::from(data);
                         let ts = now_us();
-                        let n = conn.stream_write(sid, data.clone(), true)?;
+                        // Done = no connection send capacity right now (e.g.
+                        // during an outage): nothing written, the whole frame
+                        // waits for on_stream_writable like a partial write.
+                        let n = match conn.stream_write(sid, data.clone(), true) {
+                            Ok(n) => n,
+                            Err(tquic::Error::Done) => 0,
+                            Err(e) => return Err(e.into()),
+                        };
                         if n < data.len() {
                             st.borrow_mut().pending.insert(sid, data.slice(n..));
                             conn.stream_want_write(sid, true)?;

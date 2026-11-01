@@ -1,0 +1,6 @@
+69261454923 INFO mpq_sender: connecting 10.10.1.1:46655 -> 10.10.0.1:4433
+69261541036 INFO mpq_sender: CLIENT-356807ea4cbc2cad established
+69261541051 INFO mpq_sender: added path 10.10.2.1:44837 -> 10.10.0.1:4433
+69262542122 INFO mpq_sender: streaming 1500 frames from offset 150 over 2 path(s)
+69323617807 INFO mpq_sender: CLIENT-356807ea4cbc2cad closed
+69323617899 INFO mpq_sender: sent 1500 of 1500 frames

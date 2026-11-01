@@ -37,7 +37,11 @@ def main():
     stream_frame = {r["stream_id"]: r["frame_id"] for r in sent}
     by_frame = {}
     totals = {"A": 0, "B": 0, "other": 0}
+    bad = 0
     for r in csv.DictReader(open(run / "frame_path.csv")):
+        if r.get("local") is None or not r["len"].isdigit():
+            bad += 1  # a line cut short when the sender died; reported below
+            continue
         ip = r["local"].rsplit(":", 1)[0]
         p = "A" if ip == ip_a else "B" if ip == ip_b else "other"
         n = int(r["len"])
@@ -61,10 +65,10 @@ def main():
                         meta["scenario"], meta["bitrate_kbps"], meta["encoding"], meta["clip"],
                         meta["run_id"]])
     print(f"frames: {len(sent)} sent, {done} complete; stream bytes A={totals['A']} "
-          f"B={totals['B']} other={totals['other']}")
+          f"B={totals['B']} other={totals['other']}; malformed frame_path lines: {bad}")
     print(json.dumps({"frames_sent": len(sent), "frames_complete": done,
                       "stream_bytes_a": totals["A"], "stream_bytes_b": totals["B"],
-                      "stream_bytes_other": totals["other"]}))
+                      "stream_bytes_other": totals["other"], "frame_path_malformed": bad}))
 
 
 if __name__ == "__main__":

@@ -1,0 +1,6 @@
+70229751445 INFO mpq_sender: connecting 10.10.1.1:59201 -> 10.10.0.1:4433
+70229838158 INFO mpq_sender: CLIENT-eaedd886916b3bf6 established
+70229838172 INFO mpq_sender: added path 10.10.2.1:44400 -> 10.10.0.1:4433
+70230838615 INFO mpq_sender: streaming 1500 frames from offset 200 over 2 path(s)
+70291719066 INFO mpq_sender: CLIENT-eaedd886916b3bf6 closed
+70291719156 INFO mpq_sender: sent 1500 of 1500 frames
