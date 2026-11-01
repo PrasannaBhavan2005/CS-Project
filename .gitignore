@@ -18,3 +18,11 @@ analysis/.venv/
 
 # Batch driver scratch output
 results/batches/*.last.txt
+
+# LaTeX build files
+docs/slides/*.aux
+docs/slides/*.log
+docs/slides/*.nav
+docs/slides/*.out
+docs/slides/*.snm
+docs/slides/*.toc
