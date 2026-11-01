@@ -245,3 +245,21 @@ For the user to decide / note
 Week 1 status: all gate items done except the first trace site (teammates).
 Open: choose main clip; record traces; CLAUDE.md "Main clip" line (license,
 fps) once the user decides.
+
+## 2026-11-01: user decisions on clip, licence, fps, outage
+
+Decided by the user (1 Nov):
+- Main clip `stochastic`; `linalg` added to the content-control cell (S0, S1,
+  F2, R1 x rtt_asym x 8) to show results do not depend on the camera cut.
+  Windows were fixed by the median-size rule before any scheduler run
+  (recorded in workload/README.md, with an attribution list).
+- Licence: CC BY-SA (NPTEL since Sep 2014) in CLAUDE.md and proposal.
+- 25 fps accepted: proposal now says frame interval 40 ms; the freeze rule is
+  unchanged, which at 25 fps gives a 190 ms threshold.
+- Outage reading confirmed: alternate A, B, A, ... every 15 s.
+- Budget: content controls 3 contents x 4 configs x 8 = 96 runs (was 64);
+  total ~1,240 runs.
+Edited by me at the user's request: docs/proposal.md (licence, fps, freeze
+threshold at 25 fps, controls, budget) and CLAUDE.md (same). Hypotheses
+H1-H5, thresholds and P1-P6 untouched. The claude.ai copy of the proposal
+(linked at its top) was not updated.

@@ -46,7 +46,8 @@ same time) -> receiver namespace (logs every frame's completion time and bytes
 per path) -> offline playout model.
 
 - Frames as streams: each frame part is one QUIC stream (as Media over QUIC
-  carries objects), released at the frame's capture time (30 fps). A split
+  carries objects), released at the frame's capture time (25 fps, the source
+  clips' native rate; frame interval 40 ms). A split
   frame uses two streams.
 - Strict frame order: every scheduler sends streams in frame order
   (non-incremental priority). TQUIC's default (urgency 127, incremental=true)
@@ -98,7 +99,9 @@ decode-aware measurement on two-operator uplinks, and where the logic belongs.
 
 Workload:
 - Content: main matrix = camera lecture at a blackboard (60-s NPTEL clip, CC
-  BY-NC-SA). Controls: tablet handwriting and slide screen-share in one scenario.
+  BY-SA, NPTEL's licence since Sep 2014; 25 fps). Controls: tablet
+  handwriting, slide screen-share, and a second blackboard lecture without a
+  camera cut, in one scenario.
 - Encoder: main = x264 zerolatency CBR with intra-refresh (no I-frames). Stress
   case = keyframe every 2 s (YouTube's recommended live interval). Both:
   vbv-maxrate = bitrate, vbv-bufsize = 0.5 s of bitrate.
@@ -120,7 +123,8 @@ path has a 200 ms buffer, reported):
 Metrics:
 - On-time display ratio vs D (100-1000 ms), display rule above.
 - Freeze time: gap between shown frames >= max(3 frame intervals, interval +
-  150 ms) (WebRTC freezeCount rule).
+  150 ms) (WebRTC freezeCount rule); at 25 fps (40 ms interval) that is
+  190 ms.
 - Required playout delay: smallest D with >= 99% frames on time.
 - Usable capacity: highest swept bitrate with freeze time <= 1% at D = 250 ms,
   as a share of R1's usable capacity. (250 ms leaves 150 ms of G.114's 400 ms
@@ -139,12 +143,12 @@ Statistics and checks:
 - Stack check: if TQUIC CUBIC cwnd grows while app-limited, apply RFC 9002
   section 7.8 (no growth when not cwnd-limited) for every scheduler; report it.
 - Discard and rerun runs with sender/receiver CPU > 80%.
-- Budget ~1,200 runs x ~70 s (~24 h machine time, 3-4 overnight batches):
+- Budget ~1,240 runs x ~70 s (~25 h machine time, 3-4 overnight batches):
   main matrix 10 configs x 8 scenarios x 8 runs = 640; stress 5 configs (S1, S4,
   F1, F2, R1) x 3 scenarios (rtt_asym, bw_asym, one real site) x 8 = 120; sweeps
   4 configs (S1, S4, F2, R1) x 2 scenarios (rtt_asym, one real site) x 6
   bitrates x 8 = 384; content controls 4 configs (S0, S1, F2, R1) x rtt_asym x
-  2 contents x 8 = 64.
+  3 contents (handwriting, slides, second blackboard lecture) x 8 = 96.
 - Stretch: BBR runs, 50 ms buffer sensitivity, real-world spot check (laptop
   WiFi + phone hotspot to a cloud server, MinRTT vs F2).
 

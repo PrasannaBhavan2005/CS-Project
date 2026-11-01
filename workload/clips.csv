@@ -1,6 +1,6 @@
 clip,role,youtube_id,start_s,duration_s,course,lecture,instructor,institute,license_on_source_page,license_checked
-stochastic,main_candidate,6x1pL9Yov1k,1320,60,Physical Applications of Stochastic Processes,Mod-01 Lec-01 Discrete probability distributions (Part 1),Prof. V. Balakrishnan,IIT Madras,Creative Commons Attribution license (reuse allowed),2026-11-01
-linalg,main_candidate,LJ-LoJhbBA4,720,60,Linear Algebra,Mod-01 Lec-01 Introduction to the Course Contents,Dr. K.C. Sivakumar,IIT Madras,Creative Commons Attribution license (reuse allowed),2026-11-01
-probability,main_candidate,_FTYrQtrDps,1420,60,Probability Foundation for Electrical Engineers,Mod-01 Lec-01 Introduction,Dr. Krishna Jagannathan,IIT Madras,Creative Commons Attribution license (reuse allowed),2026-11-01
+stochastic,main,6x1pL9Yov1k,1320,60,Physical Applications of Stochastic Processes,Mod-01 Lec-01 Discrete probability distributions (Part 1),Prof. V. Balakrishnan,IIT Madras,Creative Commons Attribution license (reuse allowed),2026-11-01
+linalg,control,LJ-LoJhbBA4,720,60,Linear Algebra,Mod-01 Lec-01 Introduction to the Course Contents,Dr. K.C. Sivakumar,IIT Madras,Creative Commons Attribution license (reuse allowed),2026-11-01
+probability,not_used,_FTYrQtrDps,1420,60,Probability Foundation for Electrical Engineers,Mod-01 Lec-01 Introduction,Dr. Krishna Jagannathan,IIT Madras,Creative Commons Attribution license (reuse allowed),2026-11-01
 handwriting,control,b9isuUc0CqE,500,60,Multi-Core Computer Architecture,Lec 32: Introduction to DRAM System,Dr. John Jose,IIT Guwahati,Creative Commons Attribution license (reuse allowed),2026-11-01
 slides,control,TIFFfLejkcA,3050,60,Machine Learning and Deep Learning - Fundamentals and Applications,Lec 1: Introduction to Machine Learning,Prof. M.K. Bhuyan,IIT Guwahati,Creative Commons Attribution license (reuse allowed),2026-11-01

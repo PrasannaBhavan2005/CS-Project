@@ -114,14 +114,17 @@ Unit-test the estimator, split, and receiver reassembly with hand-computed cases
   frame it depends on) <= its deadline. Dependencies: periodic keyframes = all
   frames since the last I-frame; intra-refresh = all earlier frames.
 - Freeze: gap between consecutive displayed frames >= max(3 * frame_interval,
-  frame_interval + 150 ms); freeze time = sum of such gaps.
+  frame_interval + 150 ms); freeze time = sum of such gaps. At 25 fps
+  (40 ms interval) the threshold is 190 ms.
 - Required playout delay: smallest D with >= 99% frames on time.
 - Usable capacity: highest swept bitrate with freeze time <= 1% at D = 250 ms,
   divided by R1's usable capacity in the same scenario.
 
 ## Workload and scenarios
-- Main clip: 60 s camera lecture at a blackboard (NPTEL, CC BY-NC-SA). Controls:
-  tablet handwriting, slides. Keep videos out of git; add a download script.
+- Main clip: `stochastic` (60 s camera lecture at a blackboard, NPTEL, CC
+  BY-SA; 25 fps). Controls: `handwriting`, `slides`, `linalg` (second
+  blackboard lecture, no camera cut). Clips, windows, credits:
+  `workload/README.md`. Videos stay out of git (`workload/download.sh`).
 - Encodings (x264 zerolatency, CBR, vbv-maxrate = bitrate, vbv-bufsize = 0.5 s):
   main = intra-refresh; stress = keyframe every 2 s. Record exact ffmpeg commands.
 - Main bitrate 2.6 Mbps; sweeps 0.5 Mbps to 1.1x combined capacity (6 points).
@@ -140,10 +143,10 @@ Unit-test the estimator, split, and receiver reassembly with hand-computed cases
   and identical for every config (paired design).
 - Stats: P1-P6 paired Wilcoxon + Holm; equivalence claims TOST with 5% margin;
   everything else 95% bootstrap CIs.
-- Budget ~1,200 runs (~24 h): main 10 configs x 8 scenarios x 8; stress
+- Budget ~1,240 runs (~25 h): main 10 configs x 8 scenarios x 8; stress
   (S1, S4, F1, F2, R1) x (rtt_asym, bw_asym, 1 real site) x 8; sweeps
   (S1, S4, F2, R1) x (rtt_asym, 1 real site) x 6 bitrates x 8; controls
-  (S0, S1, F2, R1) x rtt_asym x 2 contents x 8.
+  (S0, S1, F2, R1) x rtt_asym x 3 contents (handwriting, slides, linalg) x 8.
 - Discard and rerun any run whose sender or receiver CPU exceeds 80%; log it.
 - Never hand-edit or delete results; failed runs go in PROGRESS.md.
 

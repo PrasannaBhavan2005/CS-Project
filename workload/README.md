@@ -9,18 +9,35 @@ All from NPTEL on YouTube; each video's page shows "Creative Commons
 Attribution license (reuse allowed)" (checked 1 Nov 2026 via yt-dlp's
 `license` field). NPTEL's own policy is CC BY-SA since September 2014
 (earlier CC BY-NC-SA; Creative Commons wiki, "OER Case Studies", citing
-NPTEL's license note). Credit: NPTEL, the instructor and institute in
-`clips.csv`.
+NPTEL's license note). We cite them as CC BY-SA.
 
 | clip | role | content |
 | --- | --- | --- |
-| `stochastic` | main candidate | camera at a blackboard, Prof. V. Balakrishnan, IIT Madras |
-| `linalg` | main candidate | camera at a blackboard, Dr. K.C. Sivakumar, IIT Madras |
-| `probability` | main candidate | camera at a blackboard, Dr. Krishna Jagannathan, IIT Madras |
+| `stochastic` | **main clip** | camera at a blackboard, Prof. V. Balakrishnan, IIT Madras; one camera cut in the window |
+| `linalg` | control | camera at a blackboard, Dr. K.C. Sivakumar, IIT Madras; no camera cut (shows results do not hinge on the cut) |
 | `handwriting` | control | tablet handwriting over slides, Dr. John Jose, IIT Guwahati |
 | `slides` | control | slide screen-share, Prof. M.K. Bhuyan, IIT Guwahati |
+| `probability` | not used | camera at a blackboard, Dr. Krishna Jagannathan, IIT Madras (candidate, not chosen) |
 
-The main clip is chosen by the team from the three candidates.
+Chosen by the team on 1 Nov 2026 from three candidates, **before any
+scheduler run**. Every window (`start_s` in `clips.csv`) was fixed by the
+median-size rule of `pick_start.sh` before any scheduler had been run on it,
+so the windows were not selected for how schedulers perform on them.
+
+## Attribution (for the report and slides)
+
+Video clips from NPTEL (National Programme on Technology Enhanced Learning,
+https://nptel.ac.in), licensed CC BY-SA. Clips are 60 s excerpts, re-encoded.
+
+| clip | lecturer | course, lecture | institute | URL | excerpt |
+| --- | --- | --- | --- | --- | --- |
+| stochastic | Prof. V. Balakrishnan | Physical Applications of Stochastic Processes, Mod-01 Lec-01 "Discrete probability distributions (Part 1)" | IIT Madras | https://www.youtube.com/watch?v=6x1pL9Yov1k | 22:00-23:00 |
+| linalg | Dr. K.C. Sivakumar | Linear Algebra, Mod-01 Lec-01 "Introduction to the Course Contents" | IIT Madras | https://www.youtube.com/watch?v=LJ-LoJhbBA4 | 12:00-13:00 |
+| handwriting | Dr. John Jose | Multi-Core Computer Architecture, Lec 32 "Introduction to DRAM System" | IIT Guwahati | https://www.youtube.com/watch?v=b9isuUc0CqE | 8:20-9:20 |
+| slides | Prof. M.K. Bhuyan | Machine Learning and Deep Learning - Fundamentals and Applications, Lec 1 "Introduction to Machine Learning" | IIT Guwahati | https://www.youtube.com/watch?v=TIFFfLejkcA | 50:50-51:50 |
+
+Short form for slides: "Lecture video: Prof. V. Balakrishnan, IIT Madras,
+NPTEL (CC BY-SA), youtube.com/watch?v=6x1pL9Yov1k".
 
 ## Scripts
 
