@@ -15,3 +15,6 @@ workload/*.mp4
 streamer/target/
 
 analysis/.venv/
+
+# Batch driver scratch output
+results/batches/*.last.txt

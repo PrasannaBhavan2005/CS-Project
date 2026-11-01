@@ -298,3 +298,36 @@ incremental), 4 (app_limited=false to on_ack; CUBIC pacing from cwnd),
 
 Not yet checked: bulk transfer goodput on the testbed with hook c (unit
 test only). The streamer runs will show it.
+
+## 2026-11-01: week 2, streamer, run script, analysis: done; S0-S4 batch started
+
+Done
+- `streamer/` rewritten for the new design, reusing the archived event loops
+  and logger: sender = QUIC client (lecturer side, adds one path per local
+  address), receiver = QUIC server. Each frame part is a stream with a
+  16-byte header {frame_id, offset, length, frame_size}; the receiver
+  completes a frame when the union of received ranges covers it. Streams are
+  non-incremental at one urgency (strict frame order). Unit tests: header,
+  range reassembly (out of order, rescue overlap, duplicates), clip rotation.
+- TQUIC f60aecc: frame_path log line also gives the path's local address
+  (path ids are internal; logging only).
+- `scripts/run.sh <scenario> <config> <bitrate> <encoding> <clip> <run_id>`:
+  S0 (single best path), S1 minrtt, S2 roundrobin, S3 redundant, S4 ecf;
+  clip offset (multiple of 50 frames) and trace/outage offset from a seed per
+  run_id (paired); frames.csv in the CLAUDE.md format, paths.csv, cpu.csv,
+  meta.json (git hashes, binary hashes, offsets, exits, CPU max, veth bytes,
+  stalled flag). Exit 3 = stalled, 4 = CPU > 80%.
+- `scripts/batch.sh`: fixed binary snapshot, run_id-major order, resume,
+  CPU-rule rerun (discarded runs moved to results/_discarded/), log.
+- `analysis/playout.py` (+ 11 hand-computed tests; my first expected values
+  for one case were wrong, the code was right: under intra refresh frame 9
+  depends on frames 4-5), `analysis/summarize.py` (one row per run).
+
+Evidence
+- Dev runs (run_id 0, not part of any analysis): symmetric/S1 and
+  rtt_asym/S0-S4: all 1500 frames complete; CPU max 12-28%; per-path stream
+  bytes match veth counters within protocol overhead.
+
+Batch `week2_s0s4` (started 1 Nov evening): SCENARIOS control symmetric
+rtt_asym bw_asym outage x CONFIGS S0-S4 x RUN_IDS 1-8, 2600 kbit/s, intra,
+stochastic. Log: results/batches/week2_s0s4.log. Expected ~4-5 h.

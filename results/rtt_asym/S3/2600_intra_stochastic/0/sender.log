@@ -1,0 +1,6 @@
+67595897808 INFO mpq_sender: connecting 10.10.1.1:47530 -> 10.10.0.1:4433
+67595965772 INFO mpq_sender: CLIENT-110ad47d605afde7 established
+67595965790 INFO mpq_sender: added path 10.10.2.1:47107 -> 10.10.0.1:4433
+67596966188 INFO mpq_sender: streaming 1500 frames from offset 1450 over 2 path(s)
+67699252771 INFO mpq_sender: CLIENT-110ad47d605afde7 closed
+67699252955 INFO mpq_sender: sent 1500 of 1500 frames

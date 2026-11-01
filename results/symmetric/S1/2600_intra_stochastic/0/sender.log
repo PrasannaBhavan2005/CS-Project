@@ -1,0 +1,6 @@
+67209737412 INFO mpq_sender: connecting 10.10.1.1:45315 -> 10.10.0.1:4433
+67209825773 INFO mpq_sender: CLIENT-9aa1cd36169c6600 established
+67209825789 INFO mpq_sender: added path 10.10.2.1:54894 -> 10.10.0.1:4433
+67210826040 INFO mpq_sender: streaming 1500 frames from offset 1450 over 2 path(s)
+67272003370 INFO mpq_sender: CLIENT-9aa1cd36169c6600 closed
+67272003462 INFO mpq_sender: sent 1500 of 1500 frames
