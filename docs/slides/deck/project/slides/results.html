@@ -1,0 +1,40 @@
+<section id="results" data-transition="fade" style="background:#FBFBF8;color:#14213D;font-family:'IBM Plex Sans', Arial, sans-serif;padding:112px 128px;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:28px;letter-spacing:4px;text-transform:uppercase;color:#C8691F;font-weight:600">7 · First results (200 runs)</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:60px;font-weight:600;line-height:1.1">Two links help, but today’s schedulers still drop frames</h2>
+<div style="display:flex;gap:32px;align-items:flex-start">
+<div style="flex:3;display:flex;flex-direction:column;gap:14px;background:#FFFFFF;padding:32px 36px;border:1px solid #DCE1E8;border-radius:16px">
+<p style="font-size:24px;color:#4A5568">Frames shown on time (≤ 250 ms), 2.6 Mbit/s video, mean of 8 paired runs</p>
+<table style="border-collapse:collapse;font-size:27px;width:100%">
+<thead><tr style="color:#4A5568;text-align:right">
+<th style="text-align:left;font-weight:600;padding:10px 8px;border-bottom:2px solid #14213D">Two links</th>
+<th style="font-weight:600;padding:10px 8px;border-bottom:2px solid #14213D">One link</th>
+<th style="font-weight:600;padding:10px 8px;border-bottom:2px solid #14213D">MinRTT</th>
+<th style="font-weight:600;padding:10px 8px;border-bottom:2px solid #14213D">Round-robin</th>
+<th style="font-weight:600;padding:10px 8px;border-bottom:2px solid #14213D">ECF</th>
+</tr></thead>
+<tbody style="text-align:right;font-variant-numeric:tabular-nums">
+<tr><td style="text-align:left;padding:12px 8px;border-bottom:1px solid #DCE1E8">Equal: 1.6 + 1.6, 40 ms</td><td style="padding:12px 8px;border-bottom:1px solid #DCE1E8;color:#9A4D12">0.4%</td><td style="padding:12px 8px;border-bottom:1px solid #DCE1E8">88.7%</td><td style="padding:12px 8px;border-bottom:1px solid #DCE1E8;font-weight:600">98.7%</td><td style="padding:12px 8px;border-bottom:1px solid #DCE1E8">88.2%</td></tr>
+<tr><td style="text-align:left;padding:12px 8px;border-bottom:1px solid #DCE1E8">Delay 30 vs 150 ms</td><td style="padding:12px 8px;border-bottom:1px solid #DCE1E8;color:#9A4D12">0.4%</td><td style="padding:12px 8px;border-bottom:1px solid #DCE1E8">83.8%</td><td style="padding:12px 8px;border-bottom:1px solid #DCE1E8;font-weight:600">98.1%</td><td style="padding:12px 8px;border-bottom:1px solid #DCE1E8">83.7%</td></tr>
+<tr><td style="text-align:left;padding:12px 8px;border-bottom:1px solid #DCE1E8">Speed 2.0 vs 1.2 Mbit/s</td><td style="padding:12px 8px;border-bottom:1px solid #DCE1E8;color:#9A4D12">0.8%</td><td style="padding:12px 8px;border-bottom:1px solid #DCE1E8">88.1%</td><td style="padding:12px 8px;border-bottom:1px solid #DCE1E8;font-weight:600">91.7%</td><td style="padding:12px 8px;border-bottom:1px solid #DCE1E8">88.5%</td></tr>
+<tr><td style="text-align:left;padding:12px 8px">2-s outages every 15 s</td><td style="padding:12px 8px;color:#9A4D12">0.5%</td><td style="padding:12px 8px">66.2%</td><td style="padding:12px 8px;font-weight:600">75.2%</td><td style="padding:12px 8px;color:#9A4D12">31.1%</td></tr>
+</tbody>
+</table>
+<p style="font-size:22px;color:#4A5568">Control (4 + 4 Mbit/s): all ≈ 100%. Sending everything on both links (redundant) behaves like one link: &lt; 1%.</p>
+</div>
+<div style="flex:2;display:flex;flex-direction:column;gap:18px">
+<div style="display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:26px 30px;border:1px solid #DCE1E8;border-radius:16px">
+<h3 style="font-size:30px;font-weight:600;color:#2F6FB0">Waste is real</h3>
+<p style="font-size:25px;line-height:1.4;color:#3C4658">23% spare capacity, yet MinRTT and ECF miss 11–16% of frames; they need ≈ 0.5 s delay, not 0.25 s.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;background:#FFFFFF;padding:26px 30px;border:1px solid #DCE1E8;border-radius:16px">
+<h3 style="font-size:30px;font-weight:600;color:#2F6FB0">Surprise</h3>
+<p style="font-size:25px;line-height:1.4;color:#3C4658">Plain round-robin wins (+3.5 to +14 points, 8 of 8 pairs). ECF collapses under outages.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;background:#14213D;padding:26px 30px;border-radius:16px">
+<h3 style="font-size:30px;font-weight:600;color:#E8A15C">Not decided yet</h3>
+<p style="font-size:25px;line-height:1.4;color:#F4F1EA">H2 compares with the ideal link over a bitrate sweep. One bitrate is not enough: due 11 Nov.</p>
+</div>
+</div>
+</div>
+<aside>All 200 runs are valid: 5 scenarios times 5 schedulers times 8 paired runs, same clip offsets for every scheduler; none stalled, and one run was redone after the laptop slept. One link fails by design: 1.6 or 2.0 Mbit/s cannot carry 2.6 Mbit/s, so the queue grows all run (less than 1 percent on time). With two links the combined 3.2 Mbit/s leaves 23 percent spare, yet MinRTT and ECF show 11 to 16 percent of frames late at 250 ms; the delay needed for 99 percent on time is 450 to 580 ms. Round-robin is ahead of MinRTT in every pair: by 10.0 points (95 percent CI 9.2 to 10.9) on equal links, 14.2 points (13.7 to 14.8) with 30 vs 150 ms, 3.5 points with unequal speeds, 8.9 points under outages. ECF equals MinRTT except under outages, where it is 35 points worse. We have not explained these yet; we will look at path logs before saying why. These are exploratory numbers at one bitrate; the formal test H2 needs the ideal-link reference R1 and a bitrate sweep, which is the next step before 11 November.</aside>
+</section>

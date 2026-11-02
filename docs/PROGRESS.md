@@ -418,4 +418,4 @@ Next: R1 ideal-link reference in testbed; bitrate sweeps (S1, S4, R1, and S2
 for context) on rtt_asym; look at why ECF collapses under outage (paths.csv,
 frame_path) and why S2 beats MinRTT (frame-order interleaving vs MinRTT
 filling the 30 ms path's 200 ms buffer first).
-Open: slides updated with these numbers (results slide).
+Slides: results slide added (docs/slides/deck/project/slides/results.html; PDF rebuilt, 10 pages).
