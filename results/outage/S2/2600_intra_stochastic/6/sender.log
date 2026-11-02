@@ -1,0 +1,6 @@
+81351308550 INFO mpq_sender: connecting 10.10.1.1:56915 -> 10.10.0.1:4433
+81352285681 INFO mpq_sender: CLIENT-b60a629f3345f6b5 established
+81352285691 INFO mpq_sender: added path 10.10.2.1:50065 -> 10.10.0.1:4433
+81353286738 INFO mpq_sender: streaming 1500 frames from offset 1050 over 2 path(s)
+81414927262 INFO mpq_sender: CLIENT-b60a629f3345f6b5 closed
+81414927403 INFO mpq_sender: sent 1500 of 1500 frames

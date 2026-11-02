@@ -1,0 +1,6 @@
+77627900604 INFO mpq_sender: connecting 10.10.1.1:58319 -> 10.10.0.1:4433
+77627985915 INFO mpq_sender: CLIENT-0d14b7fd3c89a3ba established
+77627985926 INFO mpq_sender: added path 10.10.2.1:53271 -> 10.10.0.1:4433
+77628986845 INFO mpq_sender: streaming 1500 frames from offset 1250 over 2 path(s)
+77689247332 INFO mpq_sender: CLIENT-0d14b7fd3c89a3ba closed
+77689247447 INFO mpq_sender: sent 1500 of 1500 frames

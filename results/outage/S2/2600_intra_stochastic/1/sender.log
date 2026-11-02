@@ -1,0 +1,6 @@
+71960697089 INFO mpq_sender: connecting 10.10.1.1:49117 -> 10.10.0.1:4433
+71960783115 INFO mpq_sender: CLIENT-3c7634af10621b17 established
+71960783126 INFO mpq_sender: added path 10.10.2.1:51480 -> 10.10.0.1:4433
+71961784419 INFO mpq_sender: streaming 1500 frames from offset 150 over 2 path(s)
+72022046065 INFO mpq_sender: CLIENT-3c7634af10621b17 closed
+72022046267 INFO mpq_sender: sent 1500 of 1500 frames

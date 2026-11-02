@@ -1,0 +1,5 @@
+73660496658 INFO mpq_sender: connecting 10.10.1.1:43953 -> 10.10.0.1:4433
+73660581524 INFO mpq_sender: CLIENT-cadcfdf4f7c13ab6 established
+73661582833 INFO mpq_sender: streaming 1500 frames from offset 600 over 1 path(s)
+73761904919 INFO mpq_sender: CLIENT-cadcfdf4f7c13ab6 closed
+73761905235 INFO mpq_sender: sent 1500 of 1500 frames

@@ -1,0 +1,6 @@
+82635485155 INFO mpq_sender: connecting 10.10.1.1:58620 -> 10.10.0.1:4433
+82635552903 INFO mpq_sender: CLIENT-6a65cee944fdaae1 established
+82635552916 INFO mpq_sender: added path 10.10.2.1:33722 -> 10.10.0.1:4433
+82636554011 INFO mpq_sender: streaming 1500 frames from offset 50 over 2 path(s)
+82697971730 INFO mpq_sender: CLIENT-6a65cee944fdaae1 closed
+82697971856 INFO mpq_sender: sent 1500 of 1500 frames

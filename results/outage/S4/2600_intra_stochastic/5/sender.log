@@ -1,0 +1,6 @@
+79649931233 INFO mpq_sender: connecting 10.10.1.1:56720 -> 10.10.0.1:4433
+79650015658 INFO mpq_sender: CLIENT-32eee66af67b3e2c established
+79650015672 INFO mpq_sender: added path 10.10.2.1:45763 -> 10.10.0.1:4433
+79651015973 INFO mpq_sender: streaming 1500 frames from offset 350 over 2 path(s)
+79712566346 INFO mpq_sender: CLIENT-32eee66af67b3e2c closed
+79712566441 INFO mpq_sender: sent 1500 of 1500 frames

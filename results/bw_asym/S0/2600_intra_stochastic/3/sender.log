@@ -1,0 +1,5 @@
+75241838752 INFO mpq_sender: connecting 10.10.1.1:41949 -> 10.10.0.1:4433
+75241925617 INFO mpq_sender: CLIENT-a402d71a66ae4e1b established
+75242926156 INFO mpq_sender: streaming 1500 frames from offset 1250 over 1 path(s)
+75325166634 INFO mpq_sender: CLIENT-a402d71a66ae4e1b closed
+75325166879 INFO mpq_sender: sent 1500 of 1500 frames

@@ -1,0 +1,6 @@
+73125451413 INFO mpq_sender: connecting 10.10.1.1:60104 -> 10.10.0.1:4433
+73125520566 INFO mpq_sender: CLIENT-9c3182da03f36ee3 established
+73125520581 INFO mpq_sender: added path 10.10.2.1:48785 -> 10.10.0.1:4433
+73126520787 INFO mpq_sender: streaming 1500 frames from offset 600 over 2 path(s)
+73228811739 INFO mpq_sender: CLIENT-9c3182da03f36ee3 closed
+73228812299 INFO mpq_sender: sent 1500 of 1500 frames

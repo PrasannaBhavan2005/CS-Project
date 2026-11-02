@@ -1,0 +1,6 @@
+70449351319 INFO mpq_sender: connecting 10.10.1.1:37902 -> 10.10.0.1:4433
+70449435562 INFO mpq_sender: CLIENT-bc7d8ea4505919d5 established
+70449435574 INFO mpq_sender: added path 10.10.2.1:52959 -> 10.10.0.1:4433
+70450436211 INFO mpq_sender: streaming 1500 frames from offset 150 over 2 path(s)
+70510613335 INFO mpq_sender: CLIENT-bc7d8ea4505919d5 closed
+70510613469 INFO mpq_sender: sent 1500 of 1500 frames

@@ -1,0 +1,5 @@
+72181318243 INFO mpq_sender: connecting 10.10.1.1:52871 -> 10.10.0.1:4433
+72181406396 INFO mpq_sender: CLIENT-ca2dfd8c5018d1ca established
+72182407135 INFO mpq_sender: streaming 1500 frames from offset 600 over 1 path(s)
+72242692261 INFO mpq_sender: CLIENT-ca2dfd8c5018d1ca closed
+72242692621 INFO mpq_sender: sent 1500 of 1500 frames

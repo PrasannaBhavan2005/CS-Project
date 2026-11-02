@@ -1,0 +1,5 @@
+70636249764 INFO mpq_sender: connecting 10.10.1.1:48388 -> 10.10.0.1:4433
+70636338409 INFO mpq_sender: CLIENT-e070779be3110e1b established
+70637338948 INFO mpq_sender: streaming 1500 frames from offset 150 over 1 path(s)
+70740095271 INFO mpq_sender: CLIENT-e070779be3110e1b closed
+70740095391 INFO mpq_sender: sent 1500 of 1500 frames

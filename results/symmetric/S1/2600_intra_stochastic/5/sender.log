@@ -1,0 +1,6 @@
+78268383945 INFO mpq_sender: connecting 10.10.1.1:38285 -> 10.10.0.1:4433
+78268473809 INFO mpq_sender: CLIENT-bc1fdfa45ea5f188 established
+78268473825 INFO mpq_sender: added path 10.10.2.1:40724 -> 10.10.0.1:4433
+78269474481 INFO mpq_sender: streaming 1500 frames from offset 350 over 2 path(s)
+78330599907 INFO mpq_sender: CLIENT-bc1fdfa45ea5f188 closed
+78330599992 INFO mpq_sender: sent 1500 of 1500 frames

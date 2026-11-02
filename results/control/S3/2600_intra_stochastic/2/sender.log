@@ -1,0 +1,6 @@
+72368391034 INFO mpq_sender: connecting 10.10.1.1:57760 -> 10.10.0.1:4433
+72368475535 INFO mpq_sender: CLIENT-cbcc9ace0fd338fd established
+72368475545 INFO mpq_sender: added path 10.10.2.1:48134 -> 10.10.0.1:4433
+72369476830 INFO mpq_sender: streaming 1500 frames from offset 600 over 2 path(s)
+72429776236 INFO mpq_sender: CLIENT-cbcc9ace0fd338fd closed
+72429776466 INFO mpq_sender: sent 1500 of 1500 frames

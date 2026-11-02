@@ -1,0 +1,6 @@
+74308355578 INFO mpq_sender: connecting 10.10.1.1:52178 -> 10.10.0.1:4433
+74308449738 INFO mpq_sender: CLIENT-cae69fa6064efe81 established
+74308449838 INFO mpq_sender: added path 10.10.2.1:45318 -> 10.10.0.1:4433
+74309450952 INFO mpq_sender: streaming 1500 frames from offset 1250 over 2 path(s)
+74369972907 INFO mpq_sender: CLIENT-cae69fa6064efe81 closed
+74369972998 INFO mpq_sender: sent 1500 of 1500 frames

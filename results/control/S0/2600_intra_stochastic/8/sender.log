@@ -1,0 +1,5 @@
+83445328909 INFO mpq_sender: connecting 10.10.1.1:41278 -> 10.10.0.1:4433
+83445417414 INFO mpq_sender: CLIENT-e685adabc841d9ec established
+83446418451 INFO mpq_sender: streaming 1500 frames from offset 950 over 1 path(s)
+83506666226 INFO mpq_sender: CLIENT-e685adabc841d9ec closed
+83506666341 INFO mpq_sender: sent 1500 of 1500 frames

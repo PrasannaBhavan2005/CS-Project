@@ -1,0 +1,1 @@
+testbed up: bw_asym  A=2000kbit/40ms  B=1200kbit/60ms  queue=200ms

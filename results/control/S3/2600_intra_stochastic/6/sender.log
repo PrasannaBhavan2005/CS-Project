@@ -1,0 +1,6 @@
+79902034604 INFO mpq_sender: connecting 10.10.1.1:41167 -> 10.10.0.1:4433
+79902121038 INFO mpq_sender: CLIENT-de69e1b8a29402ea established
+79902121050 INFO mpq_sender: added path 10.10.2.1:50228 -> 10.10.0.1:4433
+79903121603 INFO mpq_sender: streaming 1500 frames from offset 1050 over 2 path(s)
+79963417017 INFO mpq_sender: CLIENT-de69e1b8a29402ea closed
+79963417135 INFO mpq_sender: sent 1500 of 1500 frames

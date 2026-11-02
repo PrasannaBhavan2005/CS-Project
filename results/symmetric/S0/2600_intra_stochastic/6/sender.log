@@ -1,0 +1,5 @@
+80027517286 INFO mpq_sender: connecting 10.10.1.1:52940 -> 10.10.0.1:4433
+80027605858 INFO mpq_sender: CLIENT-746307871496831b established
+80028606404 INFO mpq_sender: streaming 1500 frames from offset 1050 over 1 path(s)
+80131316221 INFO mpq_sender: CLIENT-746307871496831b closed
+80131316315 INFO mpq_sender: sent 1500 of 1500 frames

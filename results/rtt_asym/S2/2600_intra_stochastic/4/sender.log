@@ -1,0 +1,6 @@
+76868724282 INFO mpq_sender: connecting 10.10.1.1:59615 -> 10.10.0.1:4433
+76868792928 INFO mpq_sender: CLIENT-19d1d31e40acb19c established
+76868792945 INFO mpq_sender: added path 10.10.2.1:42488 -> 10.10.0.1:4433
+76869793898 INFO mpq_sender: streaming 1500 frames from offset 1250 over 2 path(s)
+76930091582 INFO mpq_sender: CLIENT-19d1d31e40acb19c closed
+76930091665 INFO mpq_sender: sent 1500 of 1500 frames

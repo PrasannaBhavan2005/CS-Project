@@ -1,0 +1,6 @@
+78902259200 INFO mpq_sender: connecting 10.10.1.1:43559 -> 10.10.0.1:4433
+78902325739 INFO mpq_sender: CLIENT-54d18a23fd01579b established
+78902325750 INFO mpq_sender: added path 10.10.2.1:42301 -> 10.10.0.1:4433
+78903326465 INFO mpq_sender: streaming 1500 frames from offset 350 over 2 path(s)
+78964239569 INFO mpq_sender: CLIENT-54d18a23fd01579b closed
+78964239647 INFO mpq_sender: sent 1500 of 1500 frames

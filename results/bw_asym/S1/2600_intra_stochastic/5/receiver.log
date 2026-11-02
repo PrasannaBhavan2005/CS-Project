@@ -1,0 +1,5 @@
+79050479673 INFO mpq_receiver: listening on 10.10.0.1:4433
+79050640676 INFO mpq_receiver: SERVER-598f6c524d341c71 established
+79111705564 INFO mpq_receiver: closing: 1500 of 1500 frames complete
+79112861421 INFO mpq_receiver: SERVER-598f6c524d341c71 closed
+79112862797 INFO mpq_receiver: 1500 of 1500 frames complete

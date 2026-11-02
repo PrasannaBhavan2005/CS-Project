@@ -1,0 +1,6 @@
+74712851493 INFO mpq_sender: connecting 10.10.1.1:50471 -> 10.10.0.1:4433
+74712940433 INFO mpq_sender: CLIENT-3f0b981fd2012906 established
+74712940450 INFO mpq_sender: added path 10.10.2.1:56320 -> 10.10.0.1:4433
+74713940706 INFO mpq_sender: streaming 1500 frames from offset 1250 over 2 path(s)
+74775312045 INFO mpq_sender: CLIENT-3f0b981fd2012906 closed
+74775312203 INFO mpq_sender: sent 1500 of 1500 frames

@@ -1,0 +1,5 @@
+81588148043 INFO mpq_sender: connecting 10.10.1.1:54642 -> 10.10.0.1:4433
+81588239342 INFO mpq_sender: CLIENT-09c2444c5a3681b6 established
+81589240505 INFO mpq_sender: streaming 1500 frames from offset 50 over 1 path(s)
+81649465435 INFO mpq_sender: CLIENT-09c2444c5a3681b6 closed
+81649465503 INFO mpq_sender: sent 1500 of 1500 frames

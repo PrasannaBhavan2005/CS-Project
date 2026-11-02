@@ -1,0 +1,5 @@
+73231029505 INFO mpq_receiver: listening on 10.10.0.1:4433
+73231312431 INFO mpq_receiver: SERVER-6be075cf85954c2c established
+73292438214 INFO mpq_receiver: closing: 1500 of 1500 frames complete
+73293286557 INFO mpq_receiver: SERVER-6be075cf85954c2c closed
+73293287791 INFO mpq_receiver: 1500 of 1500 frames complete

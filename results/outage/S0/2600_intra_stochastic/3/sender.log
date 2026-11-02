@@ -1,0 +1,5 @@
+75601060202 INFO mpq_sender: connecting 10.10.1.1:47124 -> 10.10.0.1:4433
+75601145578 INFO mpq_sender: CLIENT-23242275eb12ec29 established
+75602146571 INFO mpq_sender: streaming 1500 frames from offset 1250 over 1 path(s)
+75700322279 INFO mpq_sender: CLIENT-23242275eb12ec29 closed
+75700322502 INFO mpq_sender: sent 1500 of 1500 frames

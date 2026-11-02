@@ -1,0 +1,6 @@
+77036506777 INFO mpq_sender: connecting 10.10.1.1:53372 -> 10.10.0.1:4433
+77036574563 INFO mpq_sender: CLIENT-be06e49dfab5cbac established
+77036574576 INFO mpq_sender: added path 10.10.2.1:47010 -> 10.10.0.1:4433
+77037575018 INFO mpq_sender: streaming 1500 frames from offset 1250 over 2 path(s)
+77098814363 INFO mpq_sender: CLIENT-be06e49dfab5cbac closed
+77098814456 INFO mpq_sender: sent 1500 of 1500 frames

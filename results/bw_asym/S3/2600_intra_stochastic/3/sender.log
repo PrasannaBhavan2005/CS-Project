@@ -1,0 +1,6 @@
+75452758952 INFO mpq_sender: connecting 10.10.1.1:42525 -> 10.10.0.1:4433
+75452846727 INFO mpq_sender: CLIENT-a322e33ddf55163b established
+75452846797 INFO mpq_sender: added path 10.10.2.1:44673 -> 10.10.0.1:4433
+75453847197 INFO mpq_sender: streaming 1500 frames from offset 1250 over 2 path(s)
+75536089301 INFO mpq_sender: CLIENT-a322e33ddf55163b closed
+75536089523 INFO mpq_sender: sent 1500 of 1500 frames

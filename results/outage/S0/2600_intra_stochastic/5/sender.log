@@ -1,0 +1,5 @@
+79325741262 INFO mpq_sender: connecting 10.10.1.1:33223 -> 10.10.0.1:4433
+79325825803 INFO mpq_sender: CLIENT-e26789699b2b1d78 established
+79326826789 INFO mpq_sender: streaming 1500 frames from offset 350 over 1 path(s)
+79427165820 INFO mpq_sender: CLIENT-e26789699b2b1d78 closed
+79427165968 INFO mpq_sender: sent 1500 of 1500 frames

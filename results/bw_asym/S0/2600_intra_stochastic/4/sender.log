@@ -1,0 +1,5 @@
+77100246525 INFO mpq_sender: connecting 10.10.1.1:34778 -> 10.10.0.1:4433
+77100330761 INFO mpq_sender: CLIENT-755d2d196b90dfe8 established
+77101331434 INFO mpq_sender: streaming 1500 frames from offset 1250 over 1 path(s)
+77183570667 INFO mpq_sender: CLIENT-755d2d196b90dfe8 closed
+77183570838 INFO mpq_sender: sent 1500 of 1500 frames

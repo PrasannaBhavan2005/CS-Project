@@ -1,0 +1,6 @@
+78036895872 INFO mpq_sender: connecting 10.10.1.1:48560 -> 10.10.0.1:4433
+78036982718 INFO mpq_sender: CLIENT-5e0cd819ab7349c0 established
+78036982730 INFO mpq_sender: added path 10.10.2.1:58164 -> 10.10.0.1:4433
+78037983129 INFO mpq_sender: streaming 1500 frames from offset 350 over 2 path(s)
+78098243493 INFO mpq_sender: CLIENT-5e0cd819ab7349c0 closed
+78098243637 INFO mpq_sender: sent 1500 of 1500 frames

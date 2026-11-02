@@ -377,3 +377,45 @@ now have to fit in about four nights from Nov 11. Hypotheses unchanged.
 - Since 21:15 a Windows SetThreadExecutionState request (started from WSL with
   powershell.exe, 4 h) blocks idle sleep. Closing the lid can still suspend.
 - Status: 64/200 done, 0 failures apart from the discard above.
+
+## 2026-11-02 00:30 UTC: batch week2_s0s4_v2 complete (S0-S4, synthetic scenarios)
+Done: 200/200 runs (5 scenarios x S0-S4 x run_id 1-8; 2600 kbps, intra-refresh,
+stochastic), repo 52bcb82, TQUIC 4d7481d, 19:20-00:09 UTC. 0 stalled, 0 CPU
+discards apart from the sleep-caused one logged above (rerun clean), every
+frame completed in every run. Per-run metrics: results/summaries/week2_s0s4_v2_runs.csv
+(analysis/summarize.py per scenario dir, run_id 1-8; dev runs 0 and 91 excluded).
+
+Evidence: mean over 8 paired runs, on time at D = 250 ms (freeze fraction at 250 ms)
+
+| scenario | S0 | S1 MinRTT | S2 RR | S3 redundant | S4 ECF |
+| --- | --- | --- | --- | --- | --- |
+| control 4+4 @40/40 | 99.9% (0.13%) | 100% (0) | 100% (0) | 100% (0) | 100% (0) |
+| symmetric 1.6+1.6 @40/40 | 0.4% (99.7%) | 88.7% (11.5%) | 98.7% (1.3%) | 0.4% (99.7%) | 88.2% (11.9%) |
+| rtt_asym 1.6+1.6 @30/150 | 0.4% (99.7%) | 83.8% (14.9%) | 98.1% (2.1%) | 0.4% (99.7%) | 83.7% (15.2%) |
+| bw_asym 2.0+1.2 @40/60 | 0.8% (99.3%) | 88.1% (11.6%) | 91.7% (7.4%) | 0.7% (99.3%) | 88.5% (10.8%) |
+| outage 1.8+1.8 @40/60 | 0.5% (99.6%) | 66.2% (34.3%) | 75.2% (25.1%) | 0.6% (99.5%) | 31.1% (69.2%) |
+
+Median required playout delay (99% on time): control S0 124 / S1 59 / S2 44 /
+S3 131 / S4 66 ms; symmetric S1 460 / S2 311 / S4 453; rtt_asym S1 579 / S2 482 /
+S4 548; bw_asym S1 494 / S2 455 / S4 497; outage S1 2154 / S2 2027 / S4 3347 ms.
+S0 and S3 fail by construction whenever one path is below 2.6 Mbit/s (S3 sends
+every byte on both paths: extra bytes 100%), so their delay grows for the
+whole run (required delay 21-42 s).
+
+Paired differences (95% bootstrap CI of the mean, 8 pairs; exploratory, not P1-P6):
+- S2 - S1 on time at 250 ms: symmetric +10.0 pp [9.2, 10.9], rtt_asym +14.2 pp
+  [13.7, 14.8], bw_asym +3.5 pp [2.7, 4.5], outage +8.9 pp [7.5, 10.2]; S2 ahead
+  in 8/8 pairs everywhere.
+- S4 - S1: rtt_asym -0.2 pp [-0.8, +0.5] (no difference); outage -35.2 pp
+  [-41.3, -29.9] (ECF much worse under outages, 0/8 pairs better).
+
+Reading: with 23% spare combined capacity (3.2 vs 2.6 Mbit/s), MinRTT and ECF
+still miss 11-16% of frame deadlines at 250 ms; plain round-robin misses 1-2%
+on equal-rate paths. This is one bitrate only; H2 is defined on usable capacity
+relative to R1 over a bitrate sweep, so H1/H2 are NOT decided by this batch.
+
+Next: R1 ideal-link reference in testbed; bitrate sweeps (S1, S4, R1, and S2
+for context) on rtt_asym; look at why ECF collapses under outage (paths.csv,
+frame_path) and why S2 beats MinRTT (frame-order interleaving vs MinRTT
+filling the 30 ms path's 200 ms buffer first).
+Open: slides updated with these numbers (results slide).

@@ -1,0 +1,5 @@
+78965389044 INFO mpq_sender: connecting 10.10.1.1:39630 -> 10.10.0.1:4433
+78965477760 INFO mpq_sender: CLIENT-e4143e2c4b9ab8c0 established
+78966478279 INFO mpq_sender: streaming 1500 frames from offset 350 over 1 path(s)
+79048652168 INFO mpq_sender: CLIENT-e4143e2c4b9ab8c0 closed
+79048652248 INFO mpq_sender: sent 1500 of 1500 frames

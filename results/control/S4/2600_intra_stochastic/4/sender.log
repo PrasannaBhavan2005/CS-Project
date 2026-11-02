@@ -1,0 +1,6 @@
+76236198160 INFO mpq_sender: connecting 10.10.1.1:41922 -> 10.10.0.1:4433
+76236286207 INFO mpq_sender: CLIENT-8c93aae26db5e75d established
+76236286214 INFO mpq_sender: added path 10.10.2.1:43568 -> 10.10.0.1:4433
+76237286440 INFO mpq_sender: streaming 1500 frames from offset 1250 over 2 path(s)
+76297763109 INFO mpq_sender: CLIENT-8c93aae26db5e75d closed
+76297763201 INFO mpq_sender: sent 1500 of 1500 frames

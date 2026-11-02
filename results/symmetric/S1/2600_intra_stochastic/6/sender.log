@@ -1,0 +1,6 @@
+80132751737 INFO mpq_sender: connecting 10.10.1.1:33940 -> 10.10.0.1:4433
+80132841675 INFO mpq_sender: CLIENT-56a411edf66e9aba established
+80132842043 INFO mpq_sender: added path 10.10.2.1:58102 -> 10.10.0.1:4433
+80133842008 INFO mpq_sender: streaming 1500 frames from offset 1050 over 2 path(s)
+80194902442 INFO mpq_sender: CLIENT-56a411edf66e9aba closed
+80194902510 INFO mpq_sender: sent 1500 of 1500 frames

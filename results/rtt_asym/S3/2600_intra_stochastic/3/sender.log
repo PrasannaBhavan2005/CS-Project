@@ -1,0 +1,6 @@
+75073273194 INFO mpq_sender: connecting 10.10.1.1:44562 -> 10.10.0.1:4433
+75073343489 INFO mpq_sender: CLIENT-3c74af4fa4ba9a36 established
+75073343505 INFO mpq_sender: added path 10.10.2.1:49847 -> 10.10.0.1:4433
+75074344363 INFO mpq_sender: streaming 1500 frames from offset 1250 over 2 path(s)
+75176648988 INFO mpq_sender: CLIENT-3c74af4fa4ba9a36 closed
+75176649193 INFO mpq_sender: sent 1500 of 1500 frames

@@ -1,0 +1,1 @@
+testbed up: symmetric  A=1600kbit/40ms  B=1600kbit/40ms  queue=200ms

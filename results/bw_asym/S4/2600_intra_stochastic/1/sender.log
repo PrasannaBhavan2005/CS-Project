@@ -1,0 +1,6 @@
+71730716233 INFO mpq_sender: connecting 10.10.1.1:35969 -> 10.10.0.1:4433
+71730807007 INFO mpq_sender: CLIENT-ad40aed2987243d4 established
+71730807023 INFO mpq_sender: added path 10.10.2.1:58811 -> 10.10.0.1:4433
+71731807949 INFO mpq_sender: streaming 1500 frames from offset 150 over 2 path(s)
+71792779698 INFO mpq_sender: CLIENT-ad40aed2987243d4 closed
+71792779789 INFO mpq_sender: sent 1500 of 1500 frames

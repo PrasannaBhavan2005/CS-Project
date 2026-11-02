@@ -1,0 +1,5 @@
+74371958183 INFO mpq_sender: connecting 10.10.1.1:43553 -> 10.10.0.1:4433
+74372048878 INFO mpq_sender: CLIENT-580002a4a1fab08c established
+74373049213 INFO mpq_sender: streaming 1500 frames from offset 1250 over 1 path(s)
+74475805331 INFO mpq_sender: CLIENT-580002a4a1fab08c closed
+74475805701 INFO mpq_sender: sent 1500 of 1500 frames

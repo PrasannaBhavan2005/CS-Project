@@ -1,0 +1,1 @@
+testbed up: outage  A=1800kbit/40ms  B=1800kbit/60ms  queue=200ms

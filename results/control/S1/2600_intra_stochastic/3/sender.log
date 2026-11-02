@@ -1,0 +1,6 @@
+74116135790 INFO mpq_sender: connecting 10.10.1.1:51859 -> 10.10.0.1:4433
+74116252137 INFO mpq_sender: CLIENT-c34b10d516e72b79 established
+74116252149 INFO mpq_sender: added path 10.10.2.1:39726 -> 10.10.0.1:4433
+74117253073 INFO mpq_sender: streaming 1500 frames from offset 1250 over 2 path(s)
+74177541220 INFO mpq_sender: CLIENT-c34b10d516e72b79 closed
+74177541357 INFO mpq_sender: sent 1500 of 1500 frames

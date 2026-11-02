@@ -1,0 +1,6 @@
+80363736483 INFO mpq_sender: connecting 10.10.1.1:52599 -> 10.10.0.1:4433
+80363823042 INFO mpq_sender: CLIENT-8a43e9effd4cafc8 established
+80363823077 INFO mpq_sender: added path 10.10.2.1:34980 -> 10.10.0.1:4433
+80364823910 INFO mpq_sender: streaming 1500 frames from offset 1050 over 2 path(s)
+80425754312 INFO mpq_sender: CLIENT-8a43e9effd4cafc8 closed
+80425754381 INFO mpq_sender: sent 1500 of 1500 frames
