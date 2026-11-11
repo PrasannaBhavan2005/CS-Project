@@ -38,6 +38,12 @@ To do, in plan order (pick an item, say so in the team chat, work on a branch)
 6. Full matrix, stress and content-control batches (~1,040 runs left, run
    overnight); then statistics, plots, report and slides.
 
+How we work: every experiment (batches, sweeps, analysis, plots) is run by a
+Claude Code agent, not by hand. The only human step is recording the phone
+traces (item 5). Keep all configs of one scenario on one machine whose testbed
+passed `testbed/calibrate.sh` (paired design); log each batch in
+`docs/PROGRESS.md`.
+
 Open questions: why ECF collapses under outage, and why round-robin beats
 MinRTT (see the 2 Nov entry in `docs/PROGRESS.md`).
 
