@@ -419,3 +419,17 @@ for context) on rtt_asym; look at why ECF collapses under outage (paths.csv,
 frame_path) and why S2 beats MinRTT (frame-order interleaving vs MinRTT
 filling the 30 ms path's 200 ms buffer first).
 Slides: results slide added (docs/slides/deck/project/slides/results.html; PDF rebuilt, 10 pages).
+
+## 2026-11-11: repo published on GitHub for the team
+- Status checked today, on the committed code (dafebe4): TQUIC team7 (4d7481d)
+  builds; `cargo test --release` 564 + 1 passed. Streamer builds, 6 tests
+  pass. Analysis `test_playout` + `test_stats`: 15 tests pass.
+- No PROGRESS entry between 2 Nov and today. Still open from the plan: R1
+  reference, bitrate sweeps, H1/H2 report to the user (week 2 decision
+  point), F1/F2/A1/R2 (week 3), real-site traces (only the public Mahimahi
+  calibration fixture is in `traces/`).
+- Published: https://github.com/knb2345/acn-mpquic (public; branches main =
+  week1, week1, archive/old-design). TQUIC fork https://github.com/knb2345/tquic
+  (public, branch team7); `.gitmodules` now points there (was
+  Tencent/tquic, which does not have our commits). Root README.md added for
+  teammates.
