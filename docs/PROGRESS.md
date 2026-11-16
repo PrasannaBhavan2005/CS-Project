@@ -433,3 +433,11 @@ Slides: results slide added (docs/slides/deck/project/slides/results.html; PDF r
   (public, branch team7); `.gitmodules` now points there (was
   Tencent/tquic, which does not have our commits). Root README.md added for
   teammates.
+
+## 2026-11-16: Full evaluation matrix (758 runs), statistics, plots & final slides
+- Completed cross-scenario matrix at 2600 kbps (S0-S4, F1, F2, A1, R1, R2 across symmetric, bw_asym, rtt_asym, outage, control) and 7-point rtt_asym bitrate sweep (500-3500 kbps); summarized in `analysis/summary_all.csv`.
+- Key findings:
+  - H2 confirmed: MinRTT (S1) and ECF (S4) sustain only 1000 kbps with <=1% freeze at D=250 ms on rtt_asym vs 2600 kbps for ideal link R1 (38.5% < 80% bar).
+  - H3 conditional win: F2 cuts freeze fraction at 2.6 Mbps by ~10.4 pp on rtt_asym (4.5% vs 14.9%, Holm p=0.043), 10.3 pp on bw_asym (1.3% vs 11.6%, matching R1), and 10.2 pp on symmetric (1.2% vs 11.4%). Whole-frame pinning (F1) collapses (>76% freeze), proving byte-splitting is essential. At app-limited bitrates (1.0-1.6 Mbps) and in 2-s outages, 1-s max delivery-rate estimation and 1-PTO rescue inject 17-23% duplicate bytes.
+  - H4 rejected: single MPQUIC connection (F2) outperforms two separate QUIC connections (A1, which stalls at 2.6 Mbps).
+- Generated publication figures (`analysis/plots/fig1_cross_scenario_ontime.png`, `fig2_rtt_asym_sweep.png`, `fig3_path_share_overhead.png`) and built 12-slide final deck `docs/slides/Team7-final.pdf`.

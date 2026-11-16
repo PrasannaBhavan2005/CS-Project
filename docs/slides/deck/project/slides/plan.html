@@ -1,23 +1,23 @@
-<section id="plan" data-transition="fade" style="background:#FBFBF8;color:#14213D;font-family:'IBM Plex Sans', Arial, sans-serif;padding:128px;display:flex;flex-direction:column;gap:44px">
-<p style="font-size:28px;letter-spacing:4px;text-transform:uppercase;color:#C8691F;font-weight:600">8 · Next steps</p>
-<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:64px;font-weight:600;line-height:1.1">Plan to the final demo on 17 November</h2>
+<section id="plan" data-transition="fade" style="background:#EEF1F4;color:#14213D;font-family:'IBM Plex Sans', Arial, sans-serif;padding:112px 128px;display:flex;flex-direction:column;gap:40px">
+<p style="font-size:28px;letter-spacing:4px;text-transform:uppercase;color:#C8691F;font-weight:600">10 · Takeaways &amp; Lessons Learned</p>
+<h2 style="font-family:'Source Serif 4', Georgia, serif;font-size:62px;font-weight:600;line-height:1.1">What frame-aware MPQUIC teaches us for live video</h2>
 <div style="display:flex;gap:24px">
-<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:36px;border-top:8px solid #2F6FB0;border-radius:16px">
-<h3 style="font-size:32px;font-weight:600">By 11 Nov</h3>
-<p style="font-size:28px;line-height:1.45;color:#4A5568">Ideal-link reference; real recordings at 3 sites. Decide: is there a problem worth solving?</p>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:34px;border-top:8px solid #2F6FB0;border-radius:16px">
+<h3 style="font-size:30px;font-weight:600">1. Split frames, don't pin</h3>
+<p style="font-size:25px;line-height:1.45;color:#4A5568">Whole-frame pinning (F1) leaves capacity idle. Completion-synchronized byte splitting (F2) achieves near-ideal latency under sustained load.</p>
 </div>
-<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:36px;border-top:8px solid #2F6FB0;border-radius:16px">
-<h3 style="font-size:32px;font-weight:600">12–14 Nov</h3>
-<p style="font-size:28px;line-height:1.45;color:#4A5568">Build the frame scheduler; run the full comparison (~1,240 runs, overnight).</p>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:34px;border-top:8px solid #2F6FB0;border-radius:16px">
+<h3 style="font-size:30px;font-weight:600">2. Rate estimation is critical</h3>
+<p style="font-size:25px;line-height:1.45;color:#4A5568">Comparing F2 vs Oracle R2 shows delivery-rate estimation under app-limited bursts is the primary bottleneck—not the split formula itself.</p>
 </div>
-<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:36px;border-top:8px solid #2F6FB0;border-radius:16px">
-<h3 style="font-size:32px;font-weight:600">15–17 Nov</h3>
-<p style="font-size:28px;line-height:1.45;color:#4A5568">Statistics, plots, report; final demo on 17 Nov.</p>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;background:#FFFFFF;padding:34px;border-top:8px solid #2F6FB0;border-radius:16px">
+<h3 style="font-size:30px;font-weight:600">3. Guard PTO rescue</h3>
+<p style="font-size:25px;line-height:1.45;color:#4A5568">Aggressive 1-PTO rescue recovers isolated stalls but triggers congestion cascades during multi-second cellular blackouts; needs hysteresis.</p>
 </div>
 </div>
-<div style="display:flex;flex-direction:column;gap:10px;background:#F7EDE3;padding:32px 40px;border-radius:16px">
-<h3 style="font-size:30px;font-weight:600;color:#9A4D12">Main risks</h3>
-<p style="font-size:28px;line-height:1.45;color:#3C4658">Real recordings need two phones on two operators and a cloud server (tools ready and tested). The schedule is tight: about 25 hours of runs in four nights.</p>
+<div style="display:flex;flex-direction:column;gap:10px;background:#F7EDE3;padding:28px 36px;border-radius:16px">
+<h3 style="font-size:28px;font-weight:600;color:#9A4D12">Artifacts &amp; Reproducibility</h3>
+<p style="font-size:25px;line-height:1.45;color:#3C4658">758 paired runs archived in <code>analysis/summary_all.csv</code> · TQUIC hooks &amp; unit tests (565 passing) · Paired Wilcoxon/Holm &amp; TOST pipeline.</p>
 </div>
-<aside>The decision point on 11 November: if today's schedulers already come close to an ideal link, we will not build a new scheduler; we will report why and focus on measurement and outage results. Otherwise the frame scheduler is built from 12 November and compared with everything else in about 1,240 runs, roughly 25 hours of machine time, in overnight batches. Stretch goals (other congestion control, a real-world spot check) only if time is left before the 17 November demo.</aside>
+<aside>Three key design lessons for frame-aware MPQUIC live video streaming.</aside>
 </section>
