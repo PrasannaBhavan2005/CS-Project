@@ -70,7 +70,7 @@ def plot_ontime(ax):
                     ha="center",
                     va="bottom",
                     fontsize=7.5,
-                    rotation=90,
+                    rotation=90 if val < 90 else 0,
                 )
 
     ax.set_xticks(x)
@@ -165,13 +165,13 @@ def plot_path_share(ax):
     share_a = np.array([df[df["config"] == c]["share_a"].mean() * 100 for c in present_order])
     share_b = 100.0 - share_a
 
-    b1 = ax.bar(x, share_a, width=0.52, label="Path A (Fast: 30 ms, 1.6 Mbps)", color="#2B5C8F", edgecolor="black", linewidth=0.7)
-    b2 = ax.bar(x, share_b, width=0.52, bottom=share_a, label="Path B (Slow: 150 ms, 1.6 Mbps)", color="#E07A5F", edgecolor="black", linewidth=0.7)
+    b1 = ax.bar(x, share_a, width=0.52, label="Path A (Fast: 25 ms, 2.0 Mbps)", color="#2B5C8F", edgecolor="black", linewidth=0.7)
+    b2 = ax.bar(x, share_b, width=0.52, bottom=share_a, label="Path B (Slow: 75 ms, 1.5 Mbps)", color="#E07A5F", edgecolor="black", linewidth=0.7)
 
     ax.axhline(50, color="white", linestyle="--", linewidth=1.2, alpha=0.85)
     ax.set_xticks(x)
     ax.set_xticklabels(x_labels)
-    ax.set_ylim(0, 128)
+    ax.set_ylim(0, 112)
     ax.set_ylabel("Traffic Share (%)")
     ax.set_title("Multipath Traffic Distribution (Path A vs. Path B)")
     ax.legend(frameon=True, loc="upper right")

@@ -1,0 +1,10 @@
+# 2026-11-14T16:03:04Z start: SCENARIOS='rtt_asym' CONFIGS='F1 F2 A1 R2' RUN_IDS='0 1' 500 intra stochastic repo=d1d5ddb tquic=4d7481d built=2026-11-14T16:03:04Z 
+2026-11-14T16:04:07Z results/rtt_asym/F1/500_intra_stochastic/0 rc=0 63s cpu max {'mpq_receiver': 4.0, 'mpq_sender': 4.0}; stalled=False; veth tx A=3846877 B=61750
+2026-11-14T16:05:11Z results/rtt_asym/F2/500_intra_stochastic/0 rc=0 64s cpu max {'mpq_receiver': 4.0, 'mpq_sender': 6.0}; stalled=False; veth tx A=3912653 B=760956
+2026-11-14T16:06:15Z results/rtt_asym/A1/500_intra_stochastic/0 rc=0 64s cpu max {'mpq_receiver': 4.0, 'mpq_sender': 4.0}; stalled=False; veth tx A=3912151 B=34490
+2026-11-14T16:07:19Z results/rtt_asym/R2/500_intra_stochastic/0 rc=0 64s cpu max {'mpq_receiver': 4.0, 'mpq_sender': 6.0}; stalled=False; veth tx A=3921297 B=1094161
+2026-11-14T16:08:24Z results/rtt_asym/F1/500_intra_stochastic/1 rc=0 65s cpu max {'mpq_receiver': 4.0, 'mpq_sender': 6.0}; stalled=False; veth tx A=3865706 B=43536
+2026-11-14T16:09:28Z results/rtt_asym/F2/500_intra_stochastic/1 rc=0 64s cpu max {'mpq_receiver': 4.0, 'mpq_sender': 6.0}; stalled=False; veth tx A=3910122 B=698783
+2026-11-14T16:10:32Z results/rtt_asym/A1/500_intra_stochastic/1 rc=0 64s cpu max {'mpq_receiver': 4.0, 'mpq_sender': 4.0}; stalled=False; veth tx A=3914454 B=32258
+2026-11-14T16:11:37Z results/rtt_asym/R2/500_intra_stochastic/1 rc=0 65s cpu max {'mpq_receiver': 4.0, 'mpq_sender': 4.0}; stalled=False; veth tx A=3910505 B=992426
+# 2026-11-14T16:11:37Z done
