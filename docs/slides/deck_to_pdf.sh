@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Print the mid-project slide deck (docs/slides/deck/project, the same files as
+# Usage: deck_to_pdf.sh [out.pdf] (default Team7-midterm.pdf). Print the slide deck (docs/slides/deck/project, the same files as
 # the claude.ai Slides artifact) to docs/slides/Team7-midterm.pdf with the
 # Windows Chrome in headless mode: one 1920x1080 page per slide, deck order,
 # speaker notes left out. Needs internet for the Google Fonts.
@@ -30,5 +30,6 @@ win=$(wslpath -w "$tmp")
 "/mnt/c/Program Files/Google/Chrome/Application/chrome.exe" --headless=new --disable-gpu \
     --no-pdf-header-footer --virtual-time-budget=10000 \
     --print-to-pdf="$win\\deck.pdf" "file:///$(echo "$win" | tr '\\' '/')/deck.html" 2>/dev/null
-cp "$tmp/deck.pdf" "$here/Team7-midterm.pdf"
-echo "wrote $here/Team7-midterm.pdf"
+out=${1:-Team7-midterm.pdf}
+cp "$tmp/deck.pdf" "$here/$out"
+echo "wrote $here/$out"

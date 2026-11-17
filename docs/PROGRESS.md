@@ -441,3 +441,37 @@ Slides: results slide added (docs/slides/deck/project/slides/results.html; PDF r
   - H3 conditional win: F2 cuts freeze fraction at 2.6 Mbps by ~10.4 pp on rtt_asym (4.5% vs 14.9%, Holm p=0.043), 10.3 pp on bw_asym (1.3% vs 11.6%, matching R1), and 10.2 pp on symmetric (1.2% vs 11.4%). Whole-frame pinning (F1) collapses (>76% freeze), proving byte-splitting is essential. At app-limited bitrates (1.0-1.6 Mbps) and in 2-s outages, 1-s max delivery-rate estimation and 1-PTO rescue inject 17-23% duplicate bytes.
   - H4 rejected: single MPQUIC connection (F2) outperforms two separate QUIC connections (A1, which stalls at 2.6 Mbps).
 - Generated publication figures (`analysis/plots/fig1_cross_scenario_ontime.png`, `fig2_rtt_asym_sweep.png`, `fig3_path_share_overhead.png`) and built 12-slide final deck `docs/slides/Team7-final.pdf`.
+
+## 2026-11-17 evening: final-evaluation package (report, slides, README)
+Done
+- Pulled teammates' work (origin/main 50b8884: 758-run matrix, sweep, plots,
+  12-slide deck) into local main (fast-forward).
+- Slides: team slide (Kabir Nawal Bajaj, Prasanna Bhavan, Divyanshu, equal
+  contribution, as the team decided), names on the cover, eval date 18 Nov,
+  related-work references, provenance line on the results slide; PDF rebuilt
+  (`docs/slides/Team7-final.pdf`, 13 pages; `deck_to_pdf.sh` now takes the
+  output name).
+- Report: `docs/report.md` and `docs/Team7-final-report.pdf` (9 pages):
+  problem, related work, methodology, results, analysis, limitations,
+  contributions. Numbers from `analysis/summary_all.csv` via the stats part of
+  `analysis/generate_report_artifacts.py`.
+- README rewritten for the evaluation (deliverables, results, team, code status).
+
+Evidence / checks
+- Holm-corrected paired tests (11 comparisons): F2 vs S1 freeze on rtt_asym
+  4.5 % vs 14.9 % (p 0.043), symmetric 1.2 % vs 11.4 % (p 0.043), bw_asym
+  1.3 % vs 11.6 % (p 0.055); outage F2 87.4 % vs S1 40.3 % (worse).
+- Usable capacity on the rtt_asym sweep (freeze <= 1 % at 250 ms): S1 1000,
+  S4 1000, R1 2600 kbps (H2: 38 %, one run per sweep point for S1/S4/R1);
+  F2 500 kbps (non-monotone: fails at 1.0-2.2 Mbit/s, recovers at 2.6-2.8).
+  So H3 is only partly supported; the report says so.
+
+Open issues
+- The F1/F2/A1/R2 code is not in this repo or the TQUIC fork: TQUIC 4d7481d
+  accepts only minrtt/redundant/roundrobin/ecf, and run.sh passes f1/f2/a1/r2,
+  so those runs cannot be reproduced from a clean clone. Their raw results are
+  not on GitHub either (results/ was added to .gitignore in 7337b80; files
+  tracked before that are still tracked). Prasanna has the code and was asked
+  to open one PR with the code (TQUIC changes as patches/), raw per-run data
+  and batch scripts. Slides and report flag this until it is merged.
+- H1 (real traces), H5 (keyframe stress) and content controls were not run.
