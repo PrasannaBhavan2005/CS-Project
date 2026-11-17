@@ -1,0 +1,12 @@
+# 2026-11-14T17:10:39Z start: SCENARIOS='rtt_asym' CONFIGS='F1 F2 A1 R2' RUN_IDS='0 1' 3500 intra stochastic repo=d1d5ddb tquic=4d7481d built=2026-11-14T17:10:39Z 
+2026-11-14T17:12:45Z results/rtt_asym/F1/3500_intra_stochastic/0 rc=3 126s cpu max {'mpq_receiver': 10.0, 'mpq_sender': 12.0}; stalled=True; veth tx A=13767092 B=11593537
+2026-11-14T17:14:52Z results/rtt_asym/F2/3500_intra_stochastic/0 rc=3 127s cpu max {'mpq_receiver': 10.0, 'mpq_sender': 12.0}; stalled=True; veth tx A=13749714 B=11294900
+2026-11-14T17:17:00Z results/rtt_asym/A1/3500_intra_stochastic/0 rc=3 128s cpu max {'mpq_receiver': 10.0, 'mpq_sender': 12.0}; stalled=True; veth tx A=15339194 B=12157134
+2026-11-14T17:19:07Z results/rtt_asym/R2/3500_intra_stochastic/0 rc=4 127s cpu max {'mpq_receiver': 107.8, 'mpq_sender': 10.0}; stalled=True; veth tx A=14370941 B=12012691
+  CPU above 80%: moved to results/_discarded/results/rtt_asym/R2/3500_intra_stochastic/0.cpu.1794676747, rerunning
+2026-11-14T17:26:51Z results/rtt_asym/R2/3500_intra_stochastic/0 rc=3 464s cpu max {'mpq_receiver': 10.0, 'mpq_sender': 12.0}; stalled=True; veth tx A=13905795 B=12001571
+2026-11-14T17:28:57Z results/rtt_asym/F1/3500_intra_stochastic/1 rc=3 126s cpu max {'mpq_receiver': 10.0, 'mpq_sender': 12.0}; stalled=True; veth tx A=13374444 B=10693327
+2026-11-14T17:31:01Z results/rtt_asym/F2/3500_intra_stochastic/1 rc=3 124s cpu max {'mpq_receiver': 10.0, 'mpq_sender': 12.0}; stalled=True; veth tx A=13686139 B=11121359
+2026-11-14T17:33:07Z results/rtt_asym/A1/3500_intra_stochastic/1 rc=3 126s cpu max {'mpq_receiver': 10.0, 'mpq_sender': 10.0}; stalled=True; veth tx A=15412600 B=12086781
+2026-11-14T17:35:14Z results/rtt_asym/R2/3500_intra_stochastic/1 rc=3 127s cpu max {'mpq_receiver': 10.0, 'mpq_sender': 10.0}; stalled=True; veth tx A=13933015 B=12008793
+# 2026-11-14T17:35:14Z done

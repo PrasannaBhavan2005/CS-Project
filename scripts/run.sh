@@ -5,7 +5,7 @@
 #   scenario: control symmetric rtt_asym bw_asym outage real_pairs (SITE=...)
 #   config:   S0 (best single path) S1 (minrtt) S2 (roundrobin) S3 (redundant)
 #             S4 (ecf) F1 (frame-split) F2 (frame-split+rescue)
-#             A1 (F2 over 2 single-path TCP/QUIC) R1 (ideal link) R2 (true trace F2)
+#             A1 (F2 over 2 single-path QUIC) R1 (ideal link) R2 (true trace F2)
 #   encoding: intra | gop2;   clip: name in workload/clips.csv
 #   Env: BIN (streamer binaries, default streamer/target/release), CC
 #        (default cubic), LOG_LEVEL (default info), SITE (real_pairs).
@@ -33,18 +33,18 @@ for b in mpq_sender mpq_receiver; do
     [[ -x $BIN/$b ]] || { echo "run.sh: no $BIN/$b (cargo build --release in streamer/)" >&2; exit 2; }
 done
 
-# Map config IDs to TQUIC / streamer algorithms and multipath flags
+# Map config IDs to TQUIC / streamer algorithms, policies, and multipath flags
 case $config in
-    S0) algor=minrtt; mp=0 ;;
-    S1) algor=minrtt; mp=1 ;;
-    S2) algor=roundrobin; mp=1 ;;
-    S3) algor=redundant; mp=1 ;;
-    S4) algor=ecf; mp=1 ;;
-    F1) algor=f1; mp=1 ;;
-    F2) algor=f2; mp=1 ;;
-    A1) algor=a1; mp=0 ;;
-    R1) algor=minrtt; mp=0 ;;
-    R2) algor=r2; mp=1 ;;
+    S0) algor=minrtt; policy=tquic; mp=0 ;;
+    S1) algor=minrtt; policy=tquic; mp=1 ;;
+    S2) algor=roundrobin; policy=tquic; mp=1 ;;
+    S3) algor=redundant; policy=tquic; mp=1 ;;
+    S4) algor=ecf; policy=tquic; mp=1 ;;
+    F1) algor=roundrobin; policy=f1; mp=1 ;;
+    F2) algor=roundrobin; policy=f2; mp=1 ;;
+    A1) algor=minrtt; policy=a1; mp=0 ;;
+    R1) algor=minrtt; policy=tquic; mp=0 ;;
+    R2) algor=roundrobin; policy=r2; mp=1 ;;
     *) echo "run.sh: unknown config $config (S0-S4, F1, F2, A1, R1, R2)" >&2; exit 2 ;;
 esac
 
@@ -100,9 +100,10 @@ def sha(p):
     return hashlib.sha256(open(p, 'rb').read()).hexdigest()
 meta = dict(
     scenario="$scenario", site="${SITE:-}", config="$config", algorithm="$algor",
-    multipath=bool($mp), s0_path="$s0_path", bitrate_kbps=$kbps, encoding="$encoding",
-    clip="$clip", run_id=$run_id, seed="team7-run-$run_id", clip_offset_frames=$clip_offset,
-    trace_offset_ms=$trace_offset_ms, cc="$CC", warmup_ms=$WARMUP_MS,
+    policy="$policy", multipath=bool($mp), s0_path="$s0_path", bitrate_kbps=$kbps,
+    encoding="$encoding", clip="$clip", run_id=$run_id, seed="team7-run-$run_id",
+    clip_offset_frames=$clip_offset, trace_offset_ms=$trace_offset_ms, cc="$CC",
+    warmup_ms=$WARMUP_MS,
     testbed=dict(a_rate_kbit=$A_RATE_KBIT, a_rtt_ms=$A_RTT_MS, b_rate_kbit=$B_RATE_KBIT,
                  b_rtt_ms=$B_RTT_MS, queue_ms=$QUEUE_MS),
     repo_git=sh("git -C $repo rev-parse --short HEAD")
@@ -155,10 +156,13 @@ if [[ $scenario == outage || $scenario == real_pairs ]]; then
 fi
 
 mp_flag=(); (( mp )) && mp_flag=(--enable-multipath)
+replay_flag=(); [[ -f $out/replay.csv ]] && replay_flag=(--replay-csv "$out/replay.csv")
 snd_status=0
 timeout 200 sudo "$IP" netns exec "$NS_CLI" runuser -u "$RUN_AS" -- "$BIN/mpq_sender" \
     --connect "$SRV_IP:$SRV_PORT" --local-addresses "$locals" "${mp_flag[@]}" \
-    --multipath-algor "$algor" --cc "$CC" --frames "$frames" --clip-offset "$clip_offset" \
+    --multipath-algor "$algor" --policy "$policy" \
+    --a-rate-kbit "$A_RATE_KBIT" --b-rate-kbit "$B_RATE_KBIT" "${replay_flag[@]}" \
+    --cc "$CC" --frames "$frames" --clip-offset "$clip_offset" \
     --warmup-ms "$WARMUP_MS" --out "$out/send.csv" --frame-path-log "$out/frame_path.csv" \
     --paths-log "$out/paths.csv" --log-file "$out/sender.log" --log-level "$LOG_LEVEL" \
     --qlog-dir "$out/qlog_sender" 2> "$out/sender.stderr" || snd_status=$?

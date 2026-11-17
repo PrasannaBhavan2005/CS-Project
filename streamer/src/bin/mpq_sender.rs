@@ -1,13 +1,7 @@
-//! Frame sender (QUIC client, the lecturer's device). Connects from the first
-//! local address, adds one path per further local address, waits --warmup-ms
-//! for path validation, then releases frame i of the (rotated) clip at its
-//! capture time on a new unidirectional stream: a 16-byte part header
-//! {frame_id, 0, size, size} and the frame's bytes, written with fin. Streams
-//! are non-incremental at one urgency, so TQUIC sends them in stream-id order
-//! (oldest frame first). Exits when the receiver closes the connection.
+//! Frame sender supporting TQUIC schedulers (S0-S4, R1) and frame-aware
+//! schedulers F1, F2, A1, and R2.
 //!
-//! Output (--out): seq,frame_id,frame_type,size_bytes,stream_id,capture_ts_us,send_start_us
-//! (--paths-log): ts_us,local,srtt_us,min_rtt_us,rttvar_us,cwnd,sent_bytes,acked_bytes,lost_bytes,pacing_rate,in_slow_start
+//! Output (--out): seq,frame_id,frame_type,size_bytes,stream_id,capture_ts_us,send_start_us,rescued
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -33,38 +27,32 @@ use tquic_tools::QuicSocket;
 use streamer::*;
 
 #[derive(Parser)]
-#[clap(about = "Send a workload frame trace over multipath TQUIC, one stream per frame")]
+#[clap(about = "Send a workload frame trace over multipath TQUIC")]
 struct Opt {
     #[clap(long)]
     connect: SocketAddr,
-    /// One QUIC path per address; the first one carries the handshake.
     #[clap(long, value_delimiter = ',', required = true)]
     local_addresses: Vec<IpAddr>,
     #[clap(long)]
     enable_multipath: bool,
     #[clap(long, default_value = "minrtt")]
     multipath_algor: MultipathAlgorithm,
+    #[clap(long, value_enum, default_value = "tquic")]
+    policy: Policy,
     #[clap(long, default_value = "cubic")]
     cc: CongestionControlAlgorithm,
-    /// Workload trace (csv: frame_id,frame_type,size_bytes,pts_ms).
     #[clap(long)]
     frames: PathBuf,
-    /// Start the clip at this frame and wrap around (paired runs share it).
     #[clap(long, default_value_t = 0)]
     clip_offset: usize,
-    /// Delay between handshake and the first frame, so extra paths are validated.
     #[clap(long, default_value_t = 1000)]
     warmup_ms: u64,
-    /// Give up this long after the first frame.
     #[clap(long, default_value_t = 120)]
     max_duration_s: u64,
-    /// Per-frame send log (csv).
     #[clap(long)]
     out: PathBuf,
-    /// Per-STREAM-frame path log from TQUIC's team7 hook (csv).
     #[clap(long)]
     frame_path_log: Option<PathBuf>,
-    /// Per-path stats every 100 ms (csv).
     #[clap(long)]
     paths_log: Option<PathBuf>,
     #[clap(long)]
@@ -73,17 +61,37 @@ struct Opt {
     log_level: LevelFilter,
     #[clap(long)]
     qlog_dir: Option<PathBuf>,
+    /// True path rates for R2
+    #[clap(long, default_value_t = 1600)]
+    a_rate_kbit: u64,
+    #[clap(long, default_value_t = 1600)]
+    b_rate_kbit: u64,
+    #[clap(long)]
+    replay_csv: Option<PathBuf>,
+}
+
+#[derive(Clone, Debug)]
+struct InflightPart {
+    frame_id: u32,
+    frame_type: char,
+    frame_size: usize,
+    offset: u32,
+    length: u32,
+    path_idx: usize, // 0 = Path A, 1 = Path B
+    sent_ts_us: u64,
+    rescued: bool,
+    acked_baseline: u64,
 }
 
 #[derive(Default)]
 struct State {
-    conn: Option<u64>,
-    established: Option<Instant>,
-    closed: bool,
+    conns: Vec<u64>,
+    established: Vec<Instant>,
+    closed_count: usize,
     extra_paths: Vec<SocketAddr>,
     remote: Option<SocketAddr>,
-    /// Unwritten tail of a frame whose write was cut short (fin goes with it).
-    pending: HashMap<u64, Bytes>,
+    /// (conn_idx, stream_id) -> remaining unwritten bytes
+    pending: HashMap<(u64, u64), Bytes>,
     qlog_dir: Option<PathBuf>,
 }
 
@@ -104,50 +112,54 @@ impl TransportHandler for Handler {
 
     fn on_conn_established(&mut self, conn: &mut Connection) {
         let mut st = self.st.borrow_mut();
-        st.conn = conn.index();
-        st.established = Some(Instant::now());
+        if let Some(idx) = conn.index() {
+            if !st.conns.contains(&idx) {
+                st.conns.push(idx);
+                st.established.push(Instant::now());
+            }
+        }
         info!("{} established", conn.trace_id());
-        let remote = st.remote.unwrap();
-        for local in st.extra_paths.clone() {
-            match conn.add_path(local, remote) {
-                Ok(_) => info!("added path {local} -> {remote}"),
-                Err(e) => error!("add_path {local}: {e:?}"),
+        if st.conns.len() == 1 && !st.extra_paths.is_empty() {
+            let remote = st.remote.unwrap();
+            for local in st.extra_paths.clone() {
+                match conn.add_path(local, remote) {
+                    Ok(_) => info!("added path {local} -> {remote}"),
+                    Err(e) => error!("add_path {local}: {e:?}"),
+                }
             }
         }
     }
 
     fn on_conn_closed(&mut self, conn: &mut Connection) {
         info!("{} closed", conn.trace_id());
-        self.st.borrow_mut().closed = true;
+        self.st.borrow_mut().closed_count += 1;
     }
 
     fn on_stream_created(&mut self, _conn: &mut Connection, _stream_id: u64) {}
-
     fn on_stream_readable(&mut self, _conn: &mut Connection, _stream_id: u64) {}
 
     fn on_stream_writable(&mut self, conn: &mut Connection, stream_id: u64) {
+        let Some(cidx) = conn.index() else { return };
         let mut st = self.st.borrow_mut();
-        let Some(tail) = st.pending.remove(&stream_id) else {
+        let Some(tail) = st.pending.remove(&(cidx, stream_id)) else {
             let _ = conn.stream_want_write(stream_id, false);
             return;
         };
         match conn.stream_write(stream_id, tail.clone(), true) {
             Ok(n) if n < tail.len() => {
-                st.pending.insert(stream_id, tail.slice(n..));
+                st.pending.insert((cidx, stream_id), tail.slice(n..));
             }
             Ok(_) => {
                 let _ = conn.stream_want_write(stream_id, false);
             }
-            // Still no capacity: keep the tail and wait for the next callback.
             Err(tquic::Error::Done) => {
-                st.pending.insert(stream_id, tail);
+                st.pending.insert((cidx, stream_id), tail);
             }
             Err(e) => warn!("stream {stream_id} write: {e:?}"),
         }
     }
 
     fn on_stream_closed(&mut self, _conn: &mut Connection, _stream_id: u64) {}
-
     fn on_new_token(&mut self, _conn: &mut Connection, _token: Vec<u8>) {}
 }
 
@@ -167,6 +179,42 @@ fn log_paths(conn: &mut Connection, w: &mut BufWriter<File>) -> std::io::Result<
     Ok(())
 }
 
+fn write_part_stream(
+    conn: &mut Connection,
+    st: &Rc<RefCell<State>>,
+    pref_path: Option<(SocketAddr, SocketAddr)>,
+    frame: &Frame,
+    offset: usize,
+    length: usize,
+) -> Result<u64, Box<dyn Error>> {
+    // Non-incremental priority (urgency 0, incremental = false) preserves strict frame order.
+    let sid = conn.stream_uni_new(0, false)?;
+    if let Some(p) = pref_path {
+        let _ = conn.stream_set_path_preference(sid, Some(p));
+    }
+    let mut data = vec![0u8; HEADER_LEN + length];
+    let h = PartHeader {
+        frame_id: frame.id,
+        offset: offset as u32,
+        length: length as u32,
+        frame_size: frame.size as u32,
+    };
+    data[..HEADER_LEN].copy_from_slice(&h.encode());
+    let data = Bytes::from(data);
+    let n = match conn.stream_write(sid, data.clone(), true) {
+        Ok(n) => n,
+        Err(tquic::Error::Done) => 0,
+        Err(e) => return Err(e.into()),
+    };
+    if n < data.len() {
+        if let Some(cidx) = conn.index() {
+            st.borrow_mut().pending.insert((cidx, sid), data.slice(n..));
+        }
+        conn.stream_want_write(sid, true)?;
+    }
+    Ok(sid)
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let opt = Opt::parse();
     let mut routes = Vec::new();
@@ -176,14 +224,23 @@ fn main() -> Result<(), Box<dyn Error>> {
     SplitLogger::install(opt.log_level, &opt.log_file, routes)?;
     let frames = rotate(&load_frames(&opt.frames)?, opt.clip_offset);
 
+    let is_a1 = opt.policy == Policy::A1;
+    let use_mp = if is_a1 { false } else { opt.enable_multipath };
+    // For F1, F2, R2 on a single multipath connection, use RoundRobin underneath so
+    // TQUIC visits both paths and honors stream_set_path_preference (hook a).
+    let tquic_algor = match opt.policy {
+        Policy::F1 | Policy::F2 | Policy::R2 => MultipathAlgorithm::RoundRobin,
+        _ => opt.multipath_algor,
+    };
+
     let mut config = Config::new()?;
     config.set_max_idle_timeout(60_000);
     config.set_initial_max_data(64 << 20);
     config.set_initial_max_stream_data_uni(8 << 20);
     config.set_initial_max_streams_uni(1 << 20);
     config.set_congestion_control_algorithm(opt.cc);
-    config.enable_multipath(opt.enable_multipath);
-    config.set_multipath_algorithm(opt.multipath_algor);
+    config.enable_multipath(use_mp);
+    config.set_multipath_algorithm(tquic_algor);
     config.set_active_connection_id_limit(4);
     let mut tls = TlsConfig::new_client_config(vec![ALPN.to_vec()], false)?;
     tls.set_verify(false);
@@ -192,28 +249,30 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut poll = mio::Poll::new()?;
     let mut sock = QuicSocket::new(&SocketAddr::new(opt.local_addresses[0], 0), poll.registry())?;
     let mut extra_paths = Vec::new();
-    if opt.enable_multipath {
-        for ip in &opt.local_addresses[1..] {
-            extra_paths.push(sock.add(&SocketAddr::new(*ip, 0), poll.registry())?);
-        }
+    for ip in &opt.local_addresses[1..] {
+        extra_paths.push(sock.add(&SocketAddr::new(*ip, 0), poll.registry())?);
     }
     let sock = Rc::new(sock);
     let st = Rc::new(RefCell::new(State {
-        extra_paths,
+        extra_paths: if is_a1 { Vec::new() } else { extra_paths.clone() },
         remote: Some(opt.connect),
         qlog_dir: opt.qlog_dir.clone(),
         ..Default::default()
     }));
     let mut endpoint = Endpoint::new(Box::new(config), false, Box::new(Handler { st: st.clone() }), sock.clone());
-    endpoint.connect(sock.local_addr(), opt.connect, Some("example.org"), None, None, None)?;
-    info!("connecting {} -> {}", sock.local_addr(), opt.connect);
+
+    let local_a = sock.local_addr();
+    endpoint.connect(local_a, opt.connect, Some("example.org"), None, None, None)?;
+    if is_a1 && !extra_paths.is_empty() {
+        endpoint.connect(extra_paths[0], opt.connect, Some("example.org"), None, None, None)?;
+    }
 
     let term = Arc::new(AtomicBool::new(false));
     signal_hook::flag::register(signal_hook::consts::SIGTERM, term.clone())?;
     signal_hook::flag::register(signal_hook::consts::SIGINT, term.clone())?;
 
     let mut out = BufWriter::new(File::create(&opt.out)?);
-    writeln!(out, "seq,frame_id,frame_type,size_bytes,stream_id,capture_ts_us,send_start_us")?;
+    writeln!(out, "seq,frame_id,frame_type,size_bytes,stream_id,capture_ts_us,send_start_us,rescued")?;
     let mut paths_log = match &opt.paths_log {
         Some(p) => {
             let mut w = BufWriter::new(File::create(p)?);
@@ -222,65 +281,239 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         None => None,
     };
+
+    let mut rate_a = RateEstimator::new(opt.a_rate_kbit);
+    let mut rate_b = RateEstimator::new(opt.b_rate_kbit);
+    let oracle = TrueRateOracle::new(opt.a_rate_kbit, opt.b_rate_kbit, opt.replay_csv.as_deref());
+    let mut inflight: Vec<InflightPart> = Vec::new();
+    let mut last_ack_progress_ts = [now_us(); 2];
+    let mut last_acked_total = [0u64; 2];
+
     let warmup = Duration::from_millis(opt.warmup_ms);
-    let mut next = 0;
-    let mut start: Option<(Instant, u64)> = None; // (instant, monotonic us)
+    let mut next = 0usize;
+    let mut seq = 0usize;
+    let mut start: Option<(Instant, u64)> = None;
     let mut next_paths_log = Instant::now();
     let mut buf = vec![0u8; 65536];
     let mut events = mio::Events::with_capacity(1024);
 
     loop {
-        let (conn_idx, established) = {
+        let (conns, established_first) = {
             let st = st.borrow();
-            (st.conn, st.established)
+            (st.conns.clone(), st.established.first().copied())
         };
         let mut wait = None;
-        if let (Some(idx), Some(est)) = (conn_idx, established) {
-            if start.is_none() && Instant::now() >= est + warmup {
-                start = Some((Instant::now(), now_us()));
-                let n_paths = endpoint.conn_get_mut(idx).map_or(0, |c| c.paths_iter().count());
-                info!("streaming {} frames from offset {} over {n_paths} path(s)", frames.len(), opt.clip_offset);
+        let ready = if is_a1 { conns.len() >= 2 } else { !conns.is_empty() };
+
+        if ready {
+            if let Some(est) = established_first {
+                if start.is_none() && Instant::now() >= est + warmup {
+                    start = Some((Instant::now(), now_us()));
+                    info!("streaming {} frames (policy={:?})", frames.len(), opt.policy);
+                }
             }
-            match start {
-                Some((t0, m0)) => {
-                    // Write every frame that is due.
-                    while next < frames.len() && Instant::now() >= t0 + Duration::from_micros(frames[next].1) {
-                        let (f, t_rel) = &frames[next];
-                        let Some(conn) = endpoint.conn_get_mut(idx) else { break };
-                        let sid = conn.stream_uni_new(0, false)?;
-                        let mut data = vec![0u8; HEADER_LEN + f.size];
-                        let h = PartHeader { frame_id: f.id, offset: 0, length: f.size as u32, frame_size: f.size as u32 };
-                        data[..HEADER_LEN].copy_from_slice(&h.encode());
-                        let data = Bytes::from(data);
-                        let ts = now_us();
-                        // Done = no connection send capacity right now (e.g.
-                        // during an outage): nothing written, the whole frame
-                        // waits for on_stream_writable like a partial write.
-                        let n = match conn.stream_write(sid, data.clone(), true) {
-                            Ok(n) => n,
-                            Err(tquic::Error::Done) => 0,
-                            Err(e) => return Err(e.into()),
-                        };
-                        if n < data.len() {
-                            st.borrow_mut().pending.insert(sid, data.slice(n..));
-                            conn.stream_want_write(sid, true)?;
+
+            let now = now_us();
+            // Gather per-path stats for paths A (index 0) and B (index 1)
+            let mut path_tuples: Vec<(usize, SocketAddr, SocketAddr, u64, u64, u64, u64, u64, u64)> = Vec::new();
+            if is_a1 {
+                for (pidx, &cidx) in conns.iter().take(2).enumerate() {
+                    if let Some(c) = endpoint.conn_get_mut(cidx) {
+                        if let Some(t) = c.paths_iter().next() {
+                            if let Ok(s) = c.get_path_stats(t.local, t.remote) {
+                                path_tuples.push((pidx, t.local, t.remote, s.srtt, s.min_rtt, s.rttvar, s.sent_bytes, s.acked_bytes, s.lost_bytes));
+                            }
                         }
-                        writeln!(out, "{next},{},{},{},{sid},{},{ts}", f.id, f.typ, f.size, m0 + t_rel)?;
-                        next += 1;
-                    }
-                    if next < frames.len() {
-                        wait = Some((t0 + Duration::from_micros(frames[next].1)).saturating_duration_since(Instant::now()));
-                    } else if t0.elapsed() > Duration::from_secs(opt.max_duration_s) {
-                        warn!("giving up after {} s", opt.max_duration_s);
-                        break;
                     }
                 }
-                None => wait = Some((est + warmup).saturating_duration_since(Instant::now())),
+            } else if let Some(c) = endpoint.conn_get_mut(conns[0]) {
+                let tuples: Vec<_> = c.paths_iter().collect();
+                for t in tuples {
+                    let pidx = if t.local.ip() == opt.local_addresses[0] { 0 } else { 1 };
+                    if let Ok(s) = c.get_path_stats(t.local, t.remote) {
+                        path_tuples.push((pidx, t.local, t.remote, s.srtt, s.min_rtt, s.rttvar, s.sent_bytes, s.acked_bytes, s.lost_bytes));
+                    }
+                }
             }
+
+            let mut est_a = PathEstimate { queued_bytes: 0.0, rate_bps: rate_a.rate_bytes_per_sec(), srtt_us: 40_000.0, min_rtt_us: 40_000.0 };
+            let mut est_b = PathEstimate { queued_bytes: 0.0, rate_bps: rate_b.rate_bytes_per_sec(), srtt_us: 40_000.0, min_rtt_us: 40_000.0 };
+            let mut addrs = [None::<(SocketAddr, SocketAddr)>; 2];
+            let mut pto_us = [200_000u64; 2];
+
+            for &(pidx, loc, rem, srtt, min_rtt, rttvar, sent_b, acked_b, lost_b) in &path_tuples {
+                let unacked = sent_b.saturating_sub(acked_b + lost_b) as f64;
+                if acked_b > last_acked_total[pidx] {
+                    last_acked_total[pidx] = acked_b;
+                    last_ack_progress_ts[pidx] = now;
+                }
+                if pidx == 0 {
+                    rate_a.update(now, acked_b);
+                    est_a = PathEstimate {
+                        queued_bytes: unacked,
+                        rate_bps: rate_a.rate_bytes_per_sec(),
+                        srtt_us: srtt.max(1000) as f64,
+                        min_rtt_us: min_rtt.max(1000) as f64,
+                    };
+                    addrs[0] = Some((loc, rem));
+                    pto_us[0] = (srtt + 4 * rttvar.max(1000)).max(20_000);
+                } else {
+                    rate_b.update(now, acked_b);
+                    est_b = PathEstimate {
+                        queued_bytes: unacked,
+                        rate_bps: rate_b.rate_bytes_per_sec(),
+                        srtt_us: srtt.max(1000) as f64,
+                        min_rtt_us: min_rtt.max(1000) as f64,
+                    };
+                    addrs[1] = Some((loc, rem));
+                    pto_us[1] = (srtt + 4 * rttvar.max(1000)).max(20_000);
+                }
+            }
+
+            if opt.policy == Policy::R2 {
+                if let Some((t0, _)) = start {
+                    let (ra, rb) = oracle.rates_at_ms(t0.elapsed().as_millis() as u64);
+                    est_a.rate_bps = ra;
+                    est_b.rate_bps = rb;
+                }
+            }
+
+            // Retire inflight parts once cumulative acked_bytes covers them
+            inflight.retain(|p| last_acked_total[p.path_idx] < p.acked_baseline + p.length as u64);
+
+            // PTO rescue for F2, A1, R2: if a path has stalled for >= 1x PTO, resend
+            // unrescued inflight parts on the alternate path as new streams.
+            if matches!(opt.policy, Policy::F2 | Policy::A1 | Policy::R2) && addrs[0].is_some() && addrs[1].is_some() {
+                let mut to_rescue = Vec::new();
+                for part in &mut inflight {
+                    let p = part.path_idx;
+                    if !part.rescued && now.saturating_sub(part.sent_ts_us) >= pto_us[p]
+                        && now.saturating_sub(last_ack_progress_ts[p]) >= pto_us[p]
+                    {
+                        part.rescued = true;
+                        to_rescue.push(part.clone());
+                    }
+                }
+                for part in to_rescue {
+                    let alt = 1 - part.path_idx;
+                    let fake_frame = Frame { id: part.frame_id, typ: part.frame_type, size: part.frame_size, pts_us: 0 };
+                    let sid = if is_a1 {
+                        endpoint.conn_get_mut(conns[alt])
+                            .map(|c| write_part_stream(c, &st, None, &fake_frame, part.offset as usize, part.length as usize))
+                            .transpose()?
+                    } else {
+                        endpoint.conn_get_mut(conns[0])
+                            .map(|c| write_part_stream(c, &st, addrs[alt], &fake_frame, part.offset as usize, part.length as usize))
+                            .transpose()?
+                    };
+                    if let Some(sid) = sid {
+                        writeln!(out, "{seq},{},{},{},{sid},{now},{now},1", part.frame_id, part.frame_type, part.frame_size)?;
+                        seq += 1;
+                    }
+                }
+            }
+
+            if let Some((t0, m0)) = start {
+                while next < frames.len() && Instant::now() >= t0 + Duration::from_micros(frames[next].1) {
+                    let (f, t_rel) = &frames[next];
+                    let ts = now_us();
+                    let cap_ts = m0 + t_rel;
+
+                    match opt.policy {
+                        Policy::Tquic => {
+                            let Some(conn) = endpoint.conn_get_mut(conns[0]) else { break };
+                            let sid = write_part_stream(conn, &st, None, f, 0, f.size)?;
+                            writeln!(out, "{seq},{},{},{},{sid},{cap_ts},{ts},0", f.id, f.typ, f.size)?;
+                            seq += 1;
+                        }
+                        Policy::F1 => {
+                            let Some(conn) = endpoint.conn_get_mut(conns[0]) else { break };
+                            let choose_b = addrs[1].is_some()
+                                && est_b.finish_time_us(f.size as f64) < est_a.finish_time_us(f.size as f64);
+                            let pref = if choose_b { addrs[1] } else { addrs[0] };
+                            let sid = write_part_stream(conn, &st, pref, f, 0, f.size)?;
+                            if choose_b {
+                                est_b.queued_bytes += f.size as f64;
+                            } else {
+                                est_a.queued_bytes += f.size as f64;
+                            }
+                            writeln!(out, "{seq},{},{},{},{sid},{cap_ts},{ts},0", f.id, f.typ, f.size)?;
+                            seq += 1;
+                        }
+                        Policy::F2 | Policy::R2 | Policy::A1 => {
+                            let split = if addrs[0].is_some() && addrs[1].is_some() {
+                                balanced_split_bytes(est_a, est_b, f.size)
+                            } else {
+                                None
+                            };
+
+                            if let Some(s_a) = split {
+                                let s_b = f.size - s_a;
+                                let sid_a = if is_a1 {
+                                    write_part_stream(endpoint.conn_get_mut(conns[0]).unwrap(), &st, None, f, 0, s_a)?
+                                } else {
+                                    write_part_stream(endpoint.conn_get_mut(conns[0]).unwrap(), &st, addrs[0], f, 0, s_a)?
+                                };
+                                writeln!(out, "{seq},{},{},{},{sid_a},{cap_ts},{ts},0", f.id, f.typ, f.size)?;
+                                seq += 1;
+                                inflight.push(InflightPart {
+                                    frame_id: f.id, frame_type: f.typ, frame_size: f.size,
+                                    offset: 0, length: s_a as u32, path_idx: 0,
+                                    sent_ts_us: ts, rescued: false, acked_baseline: last_acked_total[0],
+                                });
+
+                                let sid_b = if is_a1 {
+                                    write_part_stream(endpoint.conn_get_mut(conns[1]).unwrap(), &st, None, f, s_a, s_b)?
+                                } else {
+                                    write_part_stream(endpoint.conn_get_mut(conns[0]).unwrap(), &st, addrs[1], f, s_a, s_b)?
+                                };
+                                writeln!(out, "{seq},{},{},{},{sid_b},{cap_ts},{ts},0", f.id, f.typ, f.size)?;
+                                seq += 1;
+                                inflight.push(InflightPart {
+                                    frame_id: f.id, frame_type: f.typ, frame_size: f.size,
+                                    offset: s_a as u32, length: s_b as u32, path_idx: 1,
+                                    sent_ts_us: ts, rescued: false, acked_baseline: last_acked_total[1],
+                                });
+                                est_a.queued_bytes += s_a as f64;
+                                est_b.queued_bytes += s_b as f64;
+                            } else {
+                                let choose_b = addrs[1].is_some()
+                                    && est_b.finish_time_us(f.size as f64) < est_a.finish_time_us(f.size as f64);
+                                let pidx = if choose_b { 1 } else { 0 };
+                                let sid = if is_a1 {
+                                    write_part_stream(endpoint.conn_get_mut(conns[pidx]).unwrap(), &st, None, f, 0, f.size)?
+                                } else {
+                                    write_part_stream(endpoint.conn_get_mut(conns[0]).unwrap(), &st, addrs[pidx], f, 0, f.size)?
+                                };
+                                writeln!(out, "{seq},{},{},{},{sid},{cap_ts},{ts},0", f.id, f.typ, f.size)?;
+                                seq += 1;
+                                inflight.push(InflightPart {
+                                    frame_id: f.id, frame_type: f.typ, frame_size: f.size,
+                                    offset: 0, length: f.size as u32, path_idx: pidx,
+                                    sent_ts_us: ts, rescued: false, acked_baseline: last_acked_total[pidx],
+                                });
+                                if pidx == 0 { est_a.queued_bytes += f.size as f64; } else { est_b.queued_bytes += f.size as f64; }
+                            }
+                        }
+                    }
+                    next += 1;
+                }
+                if next < frames.len() {
+                    wait = Some((t0 + Duration::from_micros(frames[next].1)).saturating_duration_since(Instant::now()));
+                } else if t0.elapsed() > Duration::from_secs(opt.max_duration_s) {
+                    warn!("giving up after {} s", opt.max_duration_s);
+                    break;
+                }
+            } else if let Some(est) = established_first {
+                wait = Some((est + warmup).saturating_duration_since(Instant::now()));
+            }
+
             if let Some(w) = paths_log.as_mut() {
                 if Instant::now() >= next_paths_log {
-                    if let Some(conn) = endpoint.conn_get_mut(idx) {
-                        log_paths(conn, w)?;
+                    for &cidx in &conns {
+                        if let Some(conn) = endpoint.conn_get_mut(cidx) {
+                            log_paths(conn, w)?;
+                        }
                     }
                     next_paths_log += Duration::from_millis(100);
                 }
@@ -290,7 +523,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
 
         endpoint.process_connections()?;
-        if term.load(Ordering::Relaxed) || st.borrow().closed {
+        if term.load(Ordering::Relaxed) || st.borrow().closed_count > 0 {
             break;
         }
 

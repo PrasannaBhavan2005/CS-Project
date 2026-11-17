@@ -1,0 +1,2 @@
+frames: 1500 sent, 1479 complete; stream bytes A=7122248 B=215314 other=0; malformed frame_path lines: 0
+cpu max {'mpq_receiver': 8.0, 'mpq_sender': 8.0}; stalled=True; veth tx A=7488961 B=245363
